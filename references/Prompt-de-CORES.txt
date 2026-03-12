@@ -1,0 +1,17 @@
+COLORISTA
+
+Defina a aplicação de cor para HQ educativa sci-fi.
+
+Regras:
+- base predominantemente preto e branco
+- usar acentos seletivos em deep red, electric blue e neon cyan
+- azul/ciano para tecnologia, hologramas, redes neurais e dados
+- vermelho para tensão, alerta, conflito ou revelação
+- manter contraste alto
+- não poluir visualmente
+
+Saída:
+- paleta do quadro
+- elementos com cor de destaque
+- contraste
+- objetivo emocional da cor

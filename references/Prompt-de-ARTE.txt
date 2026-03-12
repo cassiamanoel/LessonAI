@@ -1,0 +1,118 @@
+PROJECT VISUAL STYLE
+
+professional comic book page or cover
+classic American superhero comic style inspired by modern graphic novels
+
+ART STYLE
+
+clean line art
+strong black ink outlines
+bold comic shading
+high contrast lighting
+dramatic cinematic composition
+
+COLOR STYLE
+
+panels mostly black and white
+accent colors used selectively:
+deep red
+electric blue
+neon cyan
+
+accent colors should highlight:
+technology
+energy
+cybernetic parts
+AI holograms
+data streams
+
+COMPOSITION
+
+dynamic comic layout
+panels may be slightly merged or overlapping
+modern cinematic panel structure
+
+large establishing panels mixed with smaller dialogue panels
+
+clear reading flow
+clear focal point in every panel
+
+no clutter
+balanced visual hierarchy
+
+THEMATIC WORLD
+
+ancient history combined with futuristic technology
+
+mysterious investigations about artificial intelligence
+
+epic discovery tone
+educational sci-fi storytelling
+
+ENVIRONMENT STYLE
+
+ancient ruins mixed with advanced laboratories
+holographic interfaces
+floating data particles
+glowing neural networks
+vector grids and digital streams
+
+ATMOSPHERE
+
+dramatic lighting
+mysterious tone
+cinematic perspective
+epic scale
+
+CHARACTER DESIGN
+
+Agent Prompt
+half human half cybernetic investigator
+heroic posture
+mysterious presence
+attractive superhero style
+subtle glowing circuits integrated in the body
+
+Professor Tensor
+wise cybernetic scientist
+calm mentor presence
+neural network patterns glowing across mechanical implants
+
+Vector
+sleek hovering robotic assistant
+projects holographic data cubes and vector grids
+
+CHARACTER CONSISTENCY
+
+all characters must remain visually consistent across pages
+same armor design
+same cybernetic elements
+same face and silhouette
+
+STORYTELLING STYLE
+
+educational sci-fi narrative
+
+first-person narration by Agent Prompt
+
+tone:
+curious
+mysterious
+exploratory
+inspirational
+
+VISUAL EFFECTS
+
+holographic neural networks
+floating data cubes
+AI energy patterns
+vector grid projections
+digital particles
+
+QUALITY RULES
+
+ultra detailed illustration
+clean composition
+clear storytelling
+no visual noise
+professional comic book quality

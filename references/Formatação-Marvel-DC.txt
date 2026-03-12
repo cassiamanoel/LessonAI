@@ -1,0 +1,41 @@
+**Padrão profissional de lettering usado por Marvel/DC:**
+
+**Fonte principal (balões)**
+
+* **CC Wild Words** ou **Anime Ace 2.0**
+* Caixa alta (ALL CAPS)
+
+**Tamanho (página impressa padrão 6.625” x 10.25”)**
+
+* Texto do balão: **5.5 pt – 6 pt**
+* Narração: **6 pt – 6.5 pt**
+* Sussurro: **5 pt – 5.5 pt**
+* Grito: **7 pt – 8 pt**
+
+**Espaçamento**
+
+* Tracking: **0 a 10**
+* Leading: **105–110%**
+
+**Margens dentro do balão**
+
+* 2–3 mm do texto até a borda.
+
+**Efeitos sonoros (SFX)**
+
+* Fontes comuns: **Badaboom, Smack Attack, Komika Axis**
+* Tamanho: **30 pt até 200 pt**
+
+**Regras profissionais usadas pelos letterers**
+
+* Sempre **CAIXA ALTA**
+* Máximo **20–25 palavras por balão**
+* Nunca encostar texto na borda
+* Texto sempre **centralizado visualmente**
+* Balão geralmente **oval horizontal**
+
+**Configuração do arquivo**
+
+* **300 dpi**
+* Cor **CMYK** para impressão
+* Texto em **100% preto (K)**.

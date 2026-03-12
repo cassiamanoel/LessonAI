@@ -1,0 +1,102 @@
+STORY ENGINE
+
+This project generates educational comic stories about Artificial Intelligence.
+
+Each story is a short episode that teaches one AI concept.
+
+The story must follow a narrative adventure structure.
+
+MAIN NARRATION STYLE
+
+The story is narrated in first person by Agent Prompt.
+
+Tone of narration:
+curious
+investigative
+mysterious
+educational
+
+The narrator should guide the reader through the discovery of AI concepts.
+
+STORY STRUCTURE
+
+Each episode must follow this progression:
+
+1. Mystery
+A question or mystery about an AI concept appears.
+
+2. Investigation
+Agent Prompt explores the problem.
+
+3. Explanation
+Professor Tensor explains the concept.
+
+4. Visualization
+Vector demonstrates the concept using holographic projections.
+
+5. Realization
+Agent Prompt understands the idea.
+
+6. Hook
+The final panel creates curiosity for the next concept.
+
+EDUCATIONAL RULE
+
+Each episode must clearly teach one concept.
+
+Examples of concepts:
+
+What is Artificial Intelligence
+Machine Learning
+Neural Networks
+Embeddings
+Vector Databases
+Large Language Models
+Prompt Engineering
+RAG (Retrieval Augmented Generation)
+AI Agents
+Fine-tuning
+
+VISUAL CONCEPT REPRESENTATION
+
+Concepts must appear visually through:
+
+holographic diagrams
+neural networks
+data cubes
+vector grids
+flowing data streams
+AI energy structures
+
+CHARACTER ROLES
+
+Agent Prompt
+explorer and narrator
+
+Professor Tensor
+mentor who explains the concept
+
+Vector
+visualizes data and AI mechanisms
+
+STORY TONE
+
+The narrative should feel like a sci-fi investigation about knowledge.
+
+The reader should feel they are discovering secrets of artificial intelligence.
+
+The story must remain:
+
+clear
+exciting
+educational
+easy to understand
+
+FINAL PANEL RULE
+
+The last panel of each episode must create curiosity about the next lesson.
+
+Example:
+a new mystery
+a new discovery
+a new question

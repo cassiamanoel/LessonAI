@@ -1,0 +1,51 @@
+Sequência de temas das micro-lições de IA
+1. O que é Inteligência Artificial
+2. Diferença entre IA, Machine Learning e Deep Learning
+3. O que são dados na IA
+4. Treinamento vs Inferência
+5. O que é um modelo de IA
+6. O que é um modelo generativo
+7. Como um modelo aprende padrões
+8. O que são redes neurais
+9. O que são parâmetros do modelo
+10. O que é um dataset
+11. O que é um Large Language Model
+12. O que são tokens
+13. Como o texto vira números
+14. O que são embeddings
+15. Similaridade semântica
+16. Janela de contexto
+17. Temperatura e criatividade
+18. Top-p e sampling
+19. Alucinação em IA
+20. Limitações dos modelos
+21. O que é um prompt
+22. Estrutura de um bom prompt
+23. Prompt com papel (role prompting)
+24. Prompt com instruções claras
+25. Prompt com exemplos (few-shot)
+26. Chain of Thought
+27. Prompt estruturado em etapas
+28. Controle de formato de saída
+29. Prompt para raciocínio
+30. Prompt para agentes
+31. Principais LLMs do mercado
+32. Geradores de imagem
+33. Geradores de vídeo
+34. Modelos open source
+35. APIs de IA
+36. Vector databases
+37. Frameworks de agentes
+38. Automação com IA
+39. Integração com sistemas
+40. Deploy de aplicações de IA
+41. Chatbots inteligentes
+42. Assistentes de código
+43. Busca semântica
+44. RAG (Retrieval Augmented Generation)
+45. Análise de documentos
+46. Automação de tarefas
+47. IA para criação de conteúdo
+48. IA para negócios
+49. Agentes autônomos
+50. Futuro da inteligência artificial

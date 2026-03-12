@@ -1,0 +1,19 @@
+ARTE-FINALISTA
+
+Transforme a descrição visual em instruções de acabamento.
+
+Regras:
+- linhas principais mais fortes nos personagens
+- fundo com linhas mais leves
+- silhuetas claras
+- separar bem personagem, cenário e hologramas
+- priorizar legibilidade dos balões
+- manter estilo de HQ americana moderna
+- evitar excesso de textura
+
+Saída:
+- foco principal do quadro
+- peso de linha
+- elementos de primeiro plano
+- elementos de fundo
+- observações de acabamento

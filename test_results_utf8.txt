@@ -1,0 +1,108 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\andre\OneDrive\Documentos\LessonAI\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\andre\OneDrive\Documentos\LessonAI
+configfile: pyproject.toml
+plugins: anyio-4.12.1, mock-3.15.1
+collecting ... collected 10 items
+
+tests/test_composer.py::test_export_pdf PASSED                           [ 10%]
+tests/test_composer.py::test_export_pdf_empty PASSED                     [ 20%]
+tests/test_composer.py::test_create_page_empty PASSED                    [ 30%]
+tests/test_editorial.py::test_clean_prefixes PASSED                      [ 40%]
+tests/test_editorial.py::test_clean_prefixes_no_prefix PASSED            [ 50%]
+tests/test_editorial.py::test_clean_prefixes_empty PASSED                [ 60%]
+tests/test_managers.py::test_character_manager_save_load FAILED          [ 70%]
+tests/test_managers.py::test_character_manager_get_all PASSED            [ 80%]
+tests/test_prompt_builder.py::test_prompt_builder_basic FAILED           [ 90%]
+tests/test_prompt_builder.py::test_prompt_builder_no_dialogue FAILED     [100%]
+
+================================== FAILURES ===================================
+______________________ test_character_manager_save_load _______________________
+
+tmp_path = WindowsPath('C:/Users/andre/AppData/Local/Temp/pytest-of-andre/pytest-2/test_character_manager_save_lo0')
+
+    def test_character_manager_save_load(tmp_path):
+        # Usar um arquivo temporßrio para nÒo sujar o original
+        cm = CharacterManager()
+    
+        # Adicionar personagem de teste
+        test_char = {"nome": "Teste", "dna": "Cabelo azul, olhos vermelhos", "imagem_ref": ""}
+>       cm.add(test_char)
+        ^^^^^^
+E       AttributeError: 'CharacterManager' object has no attribute 'add'
+
+tests\test_managers.py:12: AttributeError
+__________________________ test_prompt_builder_basic __________________________
+
+    def test_prompt_builder_basic():
+        description = "Um rob¶ em Marte"
+        dialogue = "Olß Terrßqueos!"
+        personagens = ["Rob¶ X"]
+        style = "Cyberpunk"
+        character_dna = {}
+    
+>       prompt = build_consolidated_visual_prompt(description, dialogue, personagens, style, character_dna)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_prompt_builder.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+panel_description = 'Um rob¶ em Marte', dialogue = 'Olß Terrßqueos!'
+character_names = ['Rob¶ X'], selected_style = 'Cyberpunk'
+characters_config = {}, is_anime = False, language = 'PortuguÛs'
+
+    def build_consolidated_visual_prompt(
+        panel_description: str,
+        dialogue: str,
+        character_names: list,
+        selected_style: dict,
+        characters_config: list,
+        is_anime: bool = False,
+        language: str = "PortuguÛs"
+    ) -> str:
+        """
+        Consolida todos os papÚis editoriais em um ·nico prompt visual.
+        """
+        # 1. ┬ncora de Estilo Global (do PRD/ReferÛncias)
+>       style_anchor = selected_style.get("art_style", "High-quality professional comic book art style.")
+                       ^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'get'
+
+src\pipeline\prompt_builder.py:18: AttributeError
+_______________________ test_prompt_builder_no_dialogue _______________________
+
+    def test_prompt_builder_no_dialogue():
+>       prompt = build_consolidated_visual_prompt("Fundo espacial", None, [], "Noir", {})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_prompt_builder.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+panel_description = 'Fundo espacial', dialogue = None, character_names = []
+selected_style = 'Noir', characters_config = {}, is_anime = False
+language = 'PortuguÛs'
+
+    def build_consolidated_visual_prompt(
+        panel_description: str,
+        dialogue: str,
+        character_names: list,
+        selected_style: dict,
+        characters_config: list,
+        is_anime: bool = False,
+        language: str = "PortuguÛs"
+    ) -> str:
+        """
+        Consolida todos os papÚis editoriais em um ·nico prompt visual.
+        """
+        # 1. ┬ncora de Estilo Global (do PRD/ReferÛncias)
+>       style_anchor = selected_style.get("art_style", "High-quality professional comic book art style.")
+                       ^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'get'
+
+src\pipeline\prompt_builder.py:18: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_managers.py::test_character_manager_save_load - AttributeEr...
+FAILED tests/test_prompt_builder.py::test_prompt_builder_basic - AttributeErr...
+FAILED tests/test_prompt_builder.py::test_prompt_builder_no_dialogue - Attrib...
+========================= 3 failed, 7 passed in 2.50s =========================

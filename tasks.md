@@ -1,0 +1,25 @@
+# Tarefas: LessonAI Comic Generator
+
+- [x] Criar PRD detalhado v3.0 (incorporando Agno, uv, parametrização de imagens)
+- [/] Definir Plano de Implementação e obter aprovação do usuário
+- [ ] Configuração do Ambiente
+    - [ ] Inicializar projeto com `uv` (`pyproject.toml`)
+    - [ ] Configurar `.env` e controle de versões Python
+- [ ] Desenvolvimento dos Agentes (Agno)
+    - [ ] Agente Editor-Chefe (Orquestração)
+    - [ ] Agente Roteirista (Busca Web + Script)
+    - [ ] Agente Artista/Continuidade (Prompts Visuais)
+- [ ] Interface Streamlit
+    - [ ] Sidebar (Configurações, Modelos, CRUDs)
+    - [ ] Visualização de Roteiro Editável
+    - [ ] Geração de Imagens (Página a Página)
+    - [ ] Tela de Exportação e Social
+- [ ] Pipeline de Imagem e Composição
+    - [ ] Integração DALL-E 3 / Gemini / SDXL / Flux
+    - [ ] Lógica de composição Pillow (Balões + Onomatopeias)
+- [ ] Exportação e Publicação
+    - [ ] Gerador de PDF (A4/Digital)
+    - [ ] Conectores LinkedIn e Facebook
+- [ ] Verificação e Testes
+    - [ ] Testes de fluxo ponta-a-ponta
+    - [ ] Validação visual das HQs geradas

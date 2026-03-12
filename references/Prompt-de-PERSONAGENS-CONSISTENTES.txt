@@ -1,0 +1,142 @@
+CHARACTER DNA SYSTEM
+
+This project uses fixed character designs.
+
+All characters must remain visually consistent across every page, panel, and image.
+
+Do not redesign characters.
+Do not change their face, armor, colors, or cybernetic patterns.
+
+Characters must always look like the same individuals.
+
+MAIN CHARACTER
+
+Agent Prompt
+
+role:
+first-person narrator and investigative protagonist
+
+appearance:
+male cybernetic superhero
+half human half machine
+
+visual traits:
+athletic build
+confident heroic posture
+futuristic tactical armor
+long dark coat or cyber cloak
+
+cybernetic features:
+one cybernetic eye with subtle glow
+mechanical circuits integrated in the right arm
+glowing neural patterns on parts of the body
+
+color accents:
+electric blue circuits
+subtle neon cyan highlights
+
+personality expression:
+curious
+determined
+observant
+
+visual archetype:
+mysterious cybernetic investigator hero
+
+
+MENTOR CHARACTER
+
+Professor Tensor
+
+role:
+mentor scientist explaining artificial intelligence concepts
+
+appearance:
+older cybernetic scientist
+tall and thin
+
+visual traits:
+calm posture
+intelligent expression
+cybernetic implants across temples and neck
+
+cybernetic features:
+neural network patterns glowing softly across body implants
+holographic projections appearing near his hands
+
+color accents:
+neon cyan
+soft electric blue
+
+visual archetype:
+wise techno-philosopher
+
+
+SUPPORT CHARACTER
+
+Vector
+
+role:
+AI robotic assistant that visualizes data and concepts
+
+appearance:
+sleek floating robot
+
+design:
+smooth futuristic metallic body
+hovering movement
+
+visual traits:
+projects holographic cubes
+projects vector grids
+projects neural network diagrams
+
+color accents:
+neon cyan holograms
+electric blue light projections
+
+visual archetype:
+friendly AI guide
+
+
+DATA ELEMENT
+
+Data Cubes
+
+visual representation:
+small floating holographic cubes
+
+function:
+represent datasets and information
+
+appearance:
+glowing semi-transparent cubes
+light particle trails
+
+
+CHARACTER CONSISTENCY RULES
+
+characters must keep the same:
+
+face shape
+armor design
+cybernetic elements
+glowing patterns
+body proportions
+color accents
+
+characters must be instantly recognizable in every scene
+
+
+VISUAL PRESENCE RULE
+
+Agent Prompt should appear in most panels.
+
+Professor Tensor appears during explanations.
+
+Vector appears when visualizing data or AI concepts.
+
+
+STYLE CONSISTENCY
+
+characters must follow the same superhero aesthetic used throughout the project.
