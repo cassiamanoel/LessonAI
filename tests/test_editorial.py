@@ -18,17 +18,23 @@ def test_clean_prefixes():
     }
     
     cleaned = generator._clean_prefixes(script_data)
-    assert cleaned["paginas"][0]["quadros"][0]["dialogo"] == "Olá mundo"
-    assert cleaned["paginas"][0]["quadros"][1]["dialogo"] == "Oi!"
-    assert cleaned["paginas"][0]["quadros"][2]["dialogo"] == "Teste de limpeza"
+    assert cleaned["paginas"][0]["quadros"][0]["dialogo"] == "OLÁ MUNDO"
+    assert cleaned["paginas"][0]["quadros"][1]["dialogo"] == "OI!"
+    assert cleaned["paginas"][0]["quadros"][2]["dialogo"] == "TESTE DE LIMPEZA"
 
 def test_clean_prefixes_no_prefix():
     generator = ComicScriptGenerator()
     script_data = {
-        "paginas": [{"quadros": [{"dialogo": "Apenas um texto sem prefixo"}]}]
+        "paginas": [
+            {
+                "quadros": [
+                    {"dialogo": "Apenas um texto livre de prefixo"}
+                ]
+            }
+        ]
     }
     cleaned = generator._clean_prefixes(script_data)
-    assert cleaned["paginas"][0]["quadros"][0]["dialogo"] == "Apenas um texto sem prefixo"
+    assert cleaned["paginas"][0]["quadros"][0]["dialogo"] == "APENAS UM TEXTO LIVRE DE PREFIXO"
 
 def test_clean_prefixes_empty():
     generator = ComicScriptGenerator()

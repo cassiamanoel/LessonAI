@@ -1,8 +1,10 @@
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import os
+import re
+import json
 from dotenv import load_dotenv
 from src.prompts.loader import get_all_roles
 from src.search.web_search import search_web
@@ -12,63 +14,68 @@ load_dotenv()
 # Carrega os prompts base das referências
 ROLES = get_all_roles()
 
+# Estilo Marvel Fixo para injeção automática (v22.0)
+MARVEL_FIXED_STYLE = (
+    "Modern Marvel digital comic illustration, clean sharp ink line art, "
+    "vibrant colors, cinematic lighting, cell shading."
+)
+
 class QuadroSchema(BaseModel):
-    descricao: str = Field(..., description="Descrição visual detalhada para a IA de imagem.")
-    dialogo: str = Field("", description="Texto do balão de fala ou narração.")
-    tipo_texto: str = Field("fala", description="Tipo do texto: 'fala', 'narracao', 'sussurro', 'grito', 'pensamento', 'onomatopeia'.")
-    personagens: List[str] = Field(default_factory=list, description="Lista de nomes de personagens presentes no quadro.")
+    descricao: str = Field(..., description="Descrição visual: [personagem + ação], [ambiente], [iluminação], [clima].")
+    dialogo: str = Field("", description="Somente o texto do balão. ALL CAPS. Sem nomes/prefixos.")
+    tipo_texto: str = Field("fala", description="fala, narracao, pensamento, grito, sussurro, eletronico.")
+    personagens: List[str] = Field(default_factory=list, description="Lista de personagens.")
+    # Âncora para o Composer v21.0+
+    personagem_pos: Optional[List[int]] = Field(None, description="[x, y] do personagem no quadro para a cauda do balão.")
+    face_bbox: Optional[List[int]] = Field(None, description="[x1, y1, x2, y2] do rosto.")
+    character_bbox: Optional[List[int]] = Field(None, description="[x1, y1, x2, y2] do corpo.")
 
 class PaginaSchema(BaseModel):
-    titulo: str = Field(..., description="Título ou tema da página.")
-    quadros: List[QuadroSchema] = Field(..., description="Lista de 4 a 6 quadros.")
+    titulo: str = Field(..., description="Tema da página.")
+    quadros: List[QuadroSchema] = Field(..., description="Lista obrigatória de 4 a 6 quadros.")
 
 class RoteiroSchema(BaseModel):
-    titulo_hq: str = Field(..., description="Título geral da HQ.")
-    paginas: List[PaginaSchema] = Field(..., description="Lista de páginas da HQ.")
+    titulo_hq: str = Field(..., description="Título da HQ.")
+    paginas: List[PaginaSchema] = Field(..., description="Lista de páginas.")
 
-def get_script_writer_agent(model_id: str = "gpt-4o", language: str = "Português"):
-    """Retorna o agente responsável por pesquisar e escrever o roteiro."""
+def get_script_writer_agent(model_id: str = "gpt-4o", language: str = "Português", custom_instructions: list = None):
+    """Retorna o agente responsável por escrever o roteiro no padrão v22.0."""
+    base_instructions = [
+        f"Você é o Roteirista sênior da LessonAI. Idioma: {language}.",
+        "PADRÃO EDITORIAL PIXEL-PERFECT v22.0:",
+        "  1. ARTE: FOQUE APENAS NA CENA. O estilo Marvel será injetado automaticamente. "
+        "     PROIBIDO usar palavras como 'speech bubble', 'caption', 'text', 'panel' na descrição.",
+        "  2. CONSISTÊNCIA: Descreva sempre 'same outfit', 'same hairstyle' e 'same physical design' para personagens recorrentes.",
+        "  3. ESTRUTURA VISUAL: [Personagem + Ação], [Ambiente], [Iluminação], [Clima Visual].",
+        "  4. DIÁLOGOS (CRÍTICO): Ideal 8-18 palavras. Máximo absoluto 22. UMA ideia por balão.",
+        "  5. ZERO RUÍDO: NÃO inclua nomes de personagens ou 'NARRADOR:' no campo 'dialogo'.",
+        "  6. ALL CAPS: Escreva todo o conteúdo de 'dialogo' EM MAIÚSCULAS.",
+        "  7. LAYOUT: Gere sempre entre 4 e 6 quadros por página para encaixar no layout físico.",
+        "  8. TIPOS: Use obrigatoriamente: fala, narracao, pensamento, grito, sussurro, eletronico.",
+        "  9. ÂNCORAS: Se possível, estime personagem_pos [x, y] onde 0,0 é topo-esquerda do quadro."
+    ]
+    if custom_instructions:
+        base_instructions.extend(custom_instructions)
+
     return Agent(
         name="Roteirista LessonAI",
         model=OpenAIChat(id=model_id),
-        tools=[search_web], # Usando ferramenta customizada
+        tools=[search_web],
         description=ROLES["story_engine"],
-        instructions=[
-            f"Você é o Roteirista da equipe editorial LessonAI, especializado em padrão Marvel/DC.",
-            f"TODA A CONSTRUÇÃO DO ROTEIRO DEVE SER NO IDIOMA: {language}.",
-            "REGRA DE VOLUME: Você DEVE gerar EXATAMENTE a quantidade de páginas solicitada pelo usuário no prompt.",
-            "PROIBIDO CONDENSAR: Não resuma a história em 1 página se o pedido for maior. Cada página deve conter de 4 a 6 quadros.",
-            "MAREAMENTO DE ATOS: Distribua os 6 atos da estrutura narrativa (Mystery, Investigation, Explanation, Visualization, Realization, Hook) ao longo de TODAS as páginas solicitadas.",
-            "DENSIDADE NARRATIVA: No mínimo 80% de todos os quadros devem conter texto (fala, narração, etc).",
-            "PADRÃO MARVEL/DC DE LETTERING (OBRIGATÓRIO):",
-            "  1. FALA: Balões ovais com cauda. Texto em MAIÚSCULAS.",
-            "  2. NARRAÇÃO: Caixas retangulares (captions) no topo/canto. Sem cauda. Texto em MAIÚSCULAS.",
-            "  3. SUSSURRO: Diálogo com tom baixo ou secreto. Texto em MAIÚSCULAS.",
-            "  4. GRITO: Diálogo explosivo ou urgente. Texto em MAIÚSCULAS.",
-            "  5. PENSAMENTO: Diálogo interno do personagem. Texto em MAIÚSCULAS.",
-            "  6. ÊNFASE: Destaque palavras importantes para dar ritmo à leitura.",
-            "  7. ONOMATOPEIAS: Use efeitos sonoros (BOOM, CRASH, THWIP) fora dos balões.",
-            "  8. LIMITE: Máximo de 25 palavras por balão para fluidez.",
-            "LIMPEZA DE TEXTO: O campo 'dialogo' DEVE conter APENAS o texto final. REMOVA rótulos como 'PERSONAGEM:' ou 'NARRADOR:'.",
-            "Storytelling Cinematográfico: Descreva a ação visual CLARAMENTE antes dos diálogos.",
-            "Sua saída DEVE ser um objeto JSON seguindo TOTALMENTE o esquema RoteiroSchema."
-        ],
+        instructions=base_instructions,
         output_schema=RoteiroSchema,
     )
 
 def get_editor_chief_agent(model_id: str = "gpt-4o"):
-    """Retorna o Editor-Chefe que coordena a equipe."""
     return Agent(
         name="Editor-Chefe LessonAI",
         model=OpenAIChat(id=model_id),
         description=ROLES["master"],
         instructions=[
-            "Você coordena a produção da HQ educativa com o padrão de qualidade Marvel Grade.",
-            "Garanta que o conceito de IA seja ensinado de forma clara e didática.",
-            "Supervisione o roteiro para garantir enquadramentos cinematográficos e narrativa visual clara.",
-            "Garanta que a HQ siga exatamente a quantidade de páginas planejada no roteiro."
-        ],
-        markdown=True
+            "Você coordena a produção Marvel Grade v22.0.",
+            "Garanta que o conceito educacional seja preservado em frases curtas e impactantes.",
+            "Rigor absoluto no limite de 22 palavras por quadro."
+        ]
     )
 
 class ComicScriptGenerator:
@@ -78,106 +85,77 @@ class ComicScriptGenerator:
         self.editor = get_editor_chief_agent(model_id)
 
     def _clean_prefixes(self, script_data: dict) -> dict:
-        """Remove prefixos como 'Narrador:', 'Personagem:' do início dos diálogos/narração."""
+        """Alias para compatibilidade com testes legados."""
+        return self._format_script(script_data)
+
+    def _format_script(self, script_data: dict) -> dict:
+        """Aplica formatação avançada v22.0 (Limpeza, Estilo Fixo, Maiúsculas)."""
         if not isinstance(script_data, dict): return script_data
+        
+        # Regex para limpeza agressiva
+        regex_prefix = re.compile(r'^([A-ZÀ-Úa-zà-ú\s]+[:\-]\s*)', re.IGNORECASE)
         
         for pagina in script_data.get("paginas", []):
             for quadro in pagina.get("quadros", []):
+                # 1. Injeção de Estilo Marvel Fixo
+                desc = quadro.get("descricao", "").strip()
+                if desc and MARVEL_FIXED_STYLE not in desc:
+                    quadro["descricao"] = f"{desc}. {MARVEL_FIXED_STYLE}"
+                
+                # 2. Limpeza e Formatação de Diálogo
                 text = quadro.get("dialogo", "")
                 if text:
-                    # Remove padrões como "NOME: ", "NARRADOR: ", "AGENTE PROMPT: "
-                    # Regex para remover qualquer palavra seguida de dois pontos no início da string
-                    import re
-                    # Remove "TEXTO: " (case insensitive, opcionalmente com espaços extras)
-                    cleaned = re.sub(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s]+:\s*', '', text)
-                    quadro["dialogo"] = cleaned
+                    # Remove prefixos (ex: NARRADOR:)
+                    text = regex_prefix.sub("", text).strip()
+                    # Remove quebras de linha e excesso de espaços
+                    text = " ".join(text.split())
+                    # Remove pontuação duplicada (ex: !! -> !) exceto reticências
+                    text = re.sub(r'([!?])\1+', r'\1', text)
+                    # Força ALL CAPS mantendo as marcações de negrito do Composer
+                    quadro["dialogo"] = text.upper()
+                    
         return script_data
 
     def generate(self, theme: str, num_pages: int = 5):
         max_retries = 2
         result = None
         
+        v22_rules = (
+            "REGRAS V22.0 (PIXEL-PERFECT):\n"
+            "- 4 A 6 QUADROS POR PÁGINA.\n"
+            "- DIÁLOGOS: 8-18 PALAVRAS (MAX 22).\n"
+            "- ALL CAPS / SEM PREFIXOS.\n"
+            "- ARTE: SEM MENÇÃO A BALÕES/TEXTO.\n"
+            f"- EXATAMENTE {num_pages} PÁGINAS."
+        )
+
         for attempt in range(max_retries + 1):
-            if attempt == 0:
-                prompt = (
-                    f"Crie um roteiro completo de HQ EDUCACIONAL no idioma {self.language} sobre o tema: '{theme}'.\n"
-                    f"EXIGÊNCIA EDITORIAL OBRIGATÓRIA: A HQ DEVE ter EXATAMENTE {num_pages} PÁGINAS.\n"
-                    f"DIAGRAMAÇÃO MARVEL GRADE:\n"
-                    f"1. FALA (balão oval), 2. NARRAÇÃO (caixa), 3. SUSSURRO (tracejado), 4. GRITO (explosivo), 5. PENSAMENTO (nuvem).\n"
-                    f"6. ÊNFASE (negrito em palavras-chave), 7. ONOMATOPEIAS (BOOM!, etc), 8. LIMITE (max 25 palavras/balão).\n"
-                    f"ESTRUTURA JSON: O campo 'paginas' DEVE conter uma lista com EXATAMENTE {num_pages} objetos PaginaSchema.\n"
-                    f"Cada página DEVE ter entre 4 e 6 quadros.\n"
-                    f"Distribua os 6 atos narrativos ao longo das {num_pages} páginas. NÃO condense tudo em 1 página."
-                )
-            else:
-                prompt = (
-                    f"ATENÇÃO: Sua resposta anterior falhou em seguir o padrão editorial.\n"
-                    f"REESCREVA o roteiro com EXATAMENTE {num_pages} páginas e use o PADRÃO MARVEL de diálogos.\n"
-                    f"Lembre-se: 1.Fala, 2.Narração, 3.Sussurro, 4.Grito, 5.Pensamento, 6.Ênfase, 7.Onomatopeias, 8.Limite.\n"
-                    f"Tema: '{theme}'. Idioma: {self.language}."
-                )
-            
-            response = self.writer.run(prompt)
-            
-            if hasattr(response.content, "model_dump"):
-                result = response.content.model_dump()
-            elif isinstance(response.content, str):
-                import json
-                try:
-                    result = json.loads(response.content)
-                except:
-                    result = {"titulo_hq": theme, "paginas": []}
-            else:
-                result = response.content
-            
-            # Verificação programática
-            if isinstance(result, dict):
-                got_pages = len(result.get("paginas", []))
-                print(f"[EDITORIAL] Tentativa {attempt+1}: Gerou {got_pages}/{num_pages} páginas")
-                if got_pages >= num_pages:
-                    # Sucesso! Truncar se gerou mais do que o pedido
+            prompt = f"Crie roteiro educacional sobre '{theme}' em {num_pages} páginas. Idioma: {self.language}.\n{v22_rules}"
+            try:
+                response = self.writer.run(prompt)
+                if hasattr(response.content, "model_dump"):
+                    result = response.content.model_dump()
+                else:
+                    result = json.loads(response.content) if isinstance(response.content, str) else response.content
+                
+                if isinstance(result, dict) and len(result.get("paginas", [])) >= num_pages:
                     result["paginas"] = result["paginas"][:num_pages]
-                    return result
-            else:
-                got_pages = 0
-        
-        # Fallback: Se ainda temos menos páginas, fazer padding inteligente
-        if isinstance(result, dict) and got_pages < num_pages:
+                    return self._format_script(result)
+            except Exception as e:
+                print(f"[EDITORIAL] Erro {attempt}: {e}")
+
+        # Padding Fallback
+        if isinstance(result, dict):
             paginas = result.get("paginas", [])
-            print(f"[EDITORIAL] Padding: {got_pages} → {num_pages} páginas")
             while len(paginas) < num_pages:
-                # Gerar página extra com prompt específico
                 page_num = len(paginas) + 1
-                extra_prompt = (
-                    f"Gere APENAS 1 página extra (página {page_num} de {num_pages}) para a HQ '{result.get('titulo_hq', theme)}'.\n"
-                    f"Idioma: {self.language}. Tema: '{theme}'.\n"
-                    f"A página deve ter 4 a 6 quadros e continuar a narrativa educativa.\n"
-                    f"Retorne como um RoteiroSchema com 1 página na lista 'paginas'."
-                )
                 try:
-                    extra_response = self.writer.run(extra_prompt)
-                    if hasattr(extra_response.content, "model_dump"):
-                        extra_data = extra_response.content.model_dump()
-                    else:
-                        import json
-                        extra_data = json.loads(extra_response.content) if isinstance(extra_response.content, str) else {}
-                    
-                    extra_pages = extra_data.get("paginas", [])
-                    if extra_pages:
-                        paginas.append(extra_pages[0])
-                    else:
-                        # Último recurso: duplicar última página com título diferente
-                        if paginas:
-                            clone = dict(paginas[-1])
-                            clone["titulo"] = f"Continuação - Parte {page_num}"
-                            paginas.append(clone)
-                except Exception as e:
-                    print(f"[EDITORIAL] Erro no padding da página {page_num}: {e}")
-                    if paginas:
-                        clone = dict(paginas[-1])
-                        clone["titulo"] = f"Continuação - Parte {page_num}"
-                        paginas.append(clone)
-            
+                    extra_res = self.writer.run(f"Gere a página {page_num} de {num_pages} sobre {theme}.\n{v22_rules}")
+                    extra_data = extra_res.content.model_dump() if hasattr(extra_res.content, "model_dump") else json.loads(extra_res.content)
+                    if extra_data.get("paginas"):
+                        paginas.append(extra_data["paginas"][0])
+                except:
+                    if paginas: paginas.append(dict(paginas[-1]))
             result["paginas"] = paginas[:num_pages]
-        
-        return self._clean_prefixes(result)
+            
+        return self._format_script(result)
