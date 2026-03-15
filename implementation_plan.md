@@ -79,6 +79,78 @@ Eliminar discrepâncias entre o Editor de Layout e a imagem final usando `manual
 
 ---
 
+### [v45.0] Smart Character Targeting (Vision-Based)
+Analisar imagens geradas via I.A. Vision para identificar personagens e apontar balões automaticamente.
+
+#### [NEW] [vision_engine.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/vision_engine.py)
+- **Character Detection**: Usar Gemini 1.5 Flash para detectar `[x, y]` do rosto do personagem principal.
+- **Normalization**: Converter coordenadas da imagem para o sistema 0-1000.
+
+#### [MODIFY] [app.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/app.py)
+- **Vision Integration**: Chamar `VisionEngine` após cada geração bem-sucedida.
+- **Data Injection**: Salvar o resultado em `personagem_pos` no dicionário do quadro.
+
+#### [MODIFY] [src/pipeline/composer.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/composer.py)
+- **Anchor Priority**: Garantir que a cauda do balão use preferencialmente o ponto detectado pela visão.
+
+---
+
+### [v45.1] Smart Anchor Precision (Target Selection)
+Garantir que a cauda do balão aponte sempre para o personagem mais importante, priorizando rostos.
+
+#### [MODIFY] [src/pipeline/composer.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/composer.py)
+- **Anchor Priority Search**: Modificar `_resolve_anchor_v37` para:
+    1. Buscar o maior `face_bbox` (pela área).
+    2. Buscar o maior `character_bbox` (pela área).
+    3. Usar `personagem_pos` como fallback/override.
+- **Robust Mapping**: Garantir que as coordenadas normalizadas sejam convertidas corretamente em pixels reais do painel antes do desenho.
+
+---
+
+### [v46.0] Manual Tail Target Control
+Adicionar um handle específico no editor para controlar o alvo da seta do balão.
+
+#### [MODIFY] [app.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/app.py)
+- **Dual Control Editor**: Configurar `st_canvas` para aceitar múltiplos objetos (um retângulo para o balão e um círculo para o alvo).
+- **Initial State**: Pré-carregar o alvo na última posição conhecida ou no centro detectado.
+- **Coord Capture**: Identificar qual objeto é o "alvo" no JSON de retorno e salvar como `manual_tail_target` (0-1000).
+
+#### [MODIFY] [src/pipeline/composer.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/composer.py)
+- **Target Resolution**: Implementar `_resolve_tail_target` substituindo a lógica antiga de âncora.
+- **Strict Priority**: Seguir a ordem `manual_tail_target > personagem_pos > maior face_bbox > maior character_bbox > fallback`.
+
+---
+
+### [v47.0] 360º Tail Control (Handle Origin & Target)
+Permitir que o usuário controle tanto onde a cauda aponta quanto de onde ela sai do balão.
+
+#### [MODIFY] [app.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/app.py)
+- **Triple Control Editor**: Adicionar um terceiro objeto ao `st_canvas` (um círculo azul) para definir o `manual_tail_origin` (0-1000).
+- **Visualization**: Traçar uma linha (id: "tail_line") em tempo real no editor conectando a Origem ao Alvo para facilitar a visualização 360º.
+- **State Persistence**: Salvar `manual_tail_origin` e `manual_tail_target`.
+
+#### [MODIFY] [src/pipeline/composer.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/composer.py)
+- **Origin Override**: Atualizar `_draw_balloon_v37_geometric` para usar `manual_tail_origin` se existir.
+- **Edge Projection**: Garantir que se a origem manual estiver "fora" do balão, ela seja projetada na borda mais próxima para manter a estética.
+
+---
+
+### [v48.0] Professional PIL-Based Balloon Presets
+Migrar o desenho de balões de geometria simples para um motor de "High-Fidelity PIL" que simula balões profissionais de HQ através de caminhos orgânicos e jittering.
+
+#### [NEW] [balloon_presets.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/balloon_presets.py)
+- **Professional Engine**: Criar um catálogo de presets que gera polígonos complexos em PIL:
+    - `Standard`: Elipse orgânica com jitter de 1-2% para visual hand-drawn.
+    - `Burst`: Burst dinâmico com pontas de comprimentos variáveis para gritos.
+    - `Cloud`: Estrutura de nuvem composta por múltiplos "blobs" orgânicos.
+    - `Narrative`: Caixa retangular com bordas levemente "trêmulas" (ink style).
+- **Ink Control**: Implementar suporte a bordas com espessura variável e hachuras simples.
+
+#### [MODIFY] [composer.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/composer.py)
+- **Integration**: Substituir a lógica geométrica antiga pela chamada ao novo `BalloonPresets`.
+
+---
+
 ## Verification Plan
 
 ### Automated Tests

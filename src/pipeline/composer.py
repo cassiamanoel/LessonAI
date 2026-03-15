@@ -7,6 +7,7 @@ import math
 import os
 import re
 from src.config.image_config import COMPOSER_STYLES, COMIC_SCALES, PLACEHOLDER_URLS
+from src.pipeline.balloon_presets import BalloonPresets
 
 class ComicComposer:
     def __init__(self, dpi: int = 300):
@@ -354,20 +355,15 @@ class ComicComposer:
         return (x + w // 2, y + int(h * 0.75))
 
     def _draw_balloon_v37_geometric(self, image, text, rect, lines, font, anchor, style, panel_rect, manual_origin=None):
-        draw = ImageDraw.Draw(image)
         x1, y1, x2, y2 = rect
         bcx, bcy = (x1 + x2) // 2, (y1 + y2) // 2
         
-        # v47.0: Ponto de saída da cauda
+        # v47.0 & v48.0: Alvo e Origem da cauda
         if manual_origin and isinstance(manual_origin, list) and len(manual_origin) == 2:
-            # Converte 0-1000 para pixels reais no painel
             tx_raw = panel_rect[0] + (manual_origin[0] * panel_rect[2] / 1000)
             ty_raw = panel_rect[1] + (manual_origin[1] * panel_rect[3] / 1000)
-            # Snapping: Força o ponto a ficar na borda do balão
             tx = max(x1, min(x2, tx_raw))
             ty = max(y1, min(y2, ty_raw))
-            
-            # Se estiver "dentro", projeta para a borda mais próxima
             if x1 < tx < x2 and y1 < ty < y2:
                 dist_l, dist_r = abs(tx - x1), abs(tx - x2)
                 dist_t, dist_b = abs(ty - y1), abs(ty - y2)
@@ -377,51 +373,25 @@ class ComicComposer:
                 elif min_dist == dist_t: ty = y1
                 else: ty = y2
         else:
-            # Fallback automático
             tx, ty = self._choose_tail_exit(rect, anchor, 
                                             pad=0.85 if style in ("pensamento", "nuvem") else 1.0)
-        
-        # v42.0: Dropshadow (Profundidade Visual)
-        shadow_offset = 6
-        shadow_rect = [x1+shadow_offset, y1+shadow_offset, x2+shadow_offset, y2+shadow_offset]
-        
-        # Geometric Fidelity v42.0
-        if style in ("pensamento", "ideia", "duvida", "admiracao", "silencio", "musica", "raiva"):
-            # Sombra da nuvem/cloud
-            self._draw_cloud(draw, shadow_rect, dark=False, is_shadow=True)
-            self._draw_cloud(draw, rect, dark=(style=="raiva"))
-            
-            if style not in ("musica", "raiva"): self._draw_thought_tail(draw, (tx, ty), anchor)
-            if style == "raiva": self._draw_tail_quantum(draw, (tx, ty), anchor, width=35)
-        elif style in ("grito", "enfatico", "choro"):
-            spikes = 26 if style == "grito" else 18
-            # Sombra do burst
-            self._draw_burst(draw, shadow_rect, spikes=spikes, is_shadow=True)
-            self._draw_burst(draw, rect, spikes=spikes, dripping=(style=="choro"))
-            self._draw_tail_quantum(draw, (tx, ty), anchor, width=36 if style == "grito" else 28)
-        elif style == "eletronico":
-            # Sombra do jagged
-            self._draw_jagged_rect(draw, shadow_rect, is_shadow=True)
-            self._draw_jagged_rect(draw, rect)
-            self._draw_tail_quantum(draw, (tx, ty), anchor, width=24)
-        else:
-            # v42.0: Sombra e Forma Dinâmica (Elipse vs Rounded Rect)
-            is_long = (x2 - x1) > (y2 - y1) * 1.8
-            radius = 35
-            
-            if is_long:
-                draw.rounded_rectangle(shadow_rect, radius=radius, fill="#222222")
-                draw.rounded_rectangle(rect, radius=radius, fill=self.bubble_bg, outline=self.border_color, width=self.border_width)
-            else:
-                draw.ellipse(shadow_rect, fill="#222222")
-                draw.ellipse(rect, fill=self.bubble_bg, outline=self.border_color, width=self.border_width)
-                
-            if style == "sussurro": self._apply_dashed_border(draw, rect)
-            
-            # v42.0: Quantum Tail Enhanced
-            self._draw_tail_quantum(draw, (tx, ty), anchor, width=self.tail_width + 8)
 
-        # Render Text (Centralizado verticalmente)
+        # v48.0: Renderização via Presets Profissionais (High-Fidelity PIL)
+        origin_rel = (tx - bcx, ty - bcy)
+        target_rel = (anchor[0] - bcx, anchor[1] - bcy)
+        
+        balloon_pil = BalloonPresets.get_balloon_image(
+            style, x2-x1, y2-y1, origin_rel, target_rel,
+            bg_color=self.bubble_bg, border_color=self.border_color, border_width=self.border_width
+        )
+        
+        # Cola o balão renderizado (centralizado no bcx, bcy)
+        px = int(bcx - balloon_pil.width // 2)
+        py = int(bcy - balloon_pil.height // 2)
+        image.paste(balloon_pil, (px, py), balloon_pil)
+
+        # Draw Text (Centralizado verticalmente no centro original)
+        draw = ImageDraw.Draw(image)
         lh = self._line_height(font, extra=int(font.size * 0.4))
         th = lh * len(lines)
         cy = y1 + (y2 - y1 - th) // 2

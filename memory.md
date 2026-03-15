@@ -125,5 +125,13 @@ Este arquivo serve como o diário de bordo técnico e estratégico do projeto Le
     - [x] Composer: Implementei o suporte ao `manual_tail_origin` com lógica de "snapping". A cauda agora gruda na borda do balão mesmo se o handle for movido para fora, garantindo integridade visual.
 *   **Meu Pensamento:** Liberdade criativa total. O usuário agora pode rotacionar a seta 360º, movendo a saída do balão para o topo, lados ou base, permitindo composições muito mais dinâmicas e evitando que a cauda cruze o texto ou o rosto do personagem de forma estranha.
 
+### [x] v48.0: Professional Balloon Presets (High-Fidelity PIL Engine)
+*   **O que realizei:**
+    - [x] Implementação de um catálogo de balões em `balloon_presets.py`.
+    - [x] **Pivot Técnico**: Substituída a migração SVG por um motor de polígonos orgânicos em PIL (jittering e ink-style) para garantir compatibilidade 100% em Windows sem dependências de Cairo DLL.
+    - [x] Suporte a estilos `Grito`, `Fala`, `Pensamento`, `Eletrônico` com sombras e caudas 360º de alta qualidade.
+    - [x] Remoção de dependências pesadas (`cairosvg`, `svglib`, `reportlab`) do `pyproject.toml` para maior portabilidade.
+*   **Meu Pensamento:** O visual é o que importa. Ao emular o SVG com jitter orgânico e trajetórias poligonais complexas no PIL, entregamos o mesmo visual profissional "hand-drawn" sem o pesadelo de instalação que o Cairo representa no Windows. O Composer agora está muito mais robusto e performático.
+
 ---
 *Última atualização: 2026-03-15 - Antigravity AI*
