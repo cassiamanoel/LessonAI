@@ -126,7 +126,9 @@ class ComicScriptGenerator:
             "- DIÁLOGOS: 8-18 PALAVRAS (MAX 22).\n"
             "- ALL CAPS / SEM PREFIXOS.\n"
             "- ARTE: SEM MENÇÃO A BALÕES/TEXTO.\n"
-            f"- EXATAMENTE {num_pages} PÁGINAS."
+            f"- EXATAMENTE {num_pages} PÁGINAS.\n"
+            "- CONCISÃO: Quanto menos páginas, mais curto e objetivo deve ser o conteúdo. "
+            "Se num_pages <= 3, seja extremamente direto e esqueça introduções longas."
         )
 
         for attempt in range(max_retries + 1):

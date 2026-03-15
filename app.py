@@ -1,3 +1,5 @@
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 import streamlit as st
 import json
 from io import BytesIO
@@ -195,14 +197,24 @@ elif st.session_state.step == "imagens":
                         st.caption(f"Quadro {idx+1}")
                         
                         # Carrega background
-                        if url.startswith("data:image"):
-                            import base64
-                            header, encoded = url.split(",", 1)
-                            data = base64.b64decode(encoded)
-                            bg_img = Image.open(BytesIO(data)).convert("RGB")
-                        else:
-                            res = requests.get(url)
-                            bg_img = Image.open(BytesIO(res.content)).convert("RGB")
+                        bg_img = None
+                        try:
+                            if url.startswith("data:image"):
+                                import base64
+                                header, encoded = url.split(",", 1)
+                                data = base64.b64decode(encoded)
+                                bg_img = Image.open(BytesIO(data)).convert("RGB")
+                            else:
+                                res = requests.get(url, timeout=10)
+                                if res.status_code == 200:
+                                    bg_img = Image.open(BytesIO(res.content)).convert("RGB")
+                                else:
+                                    st.error(f"Erro ao baixar imagem: Status {res.status_code}")
+                        except Exception as e:
+                            st.error(f"Erro Arte: {e}")
+                        
+                        if bg_img is None:
+                            bg_img = Image.new("RGB", (250, 250), "gray")
                         
                         # v41.0: Controles Unificados
                         from src.config.image_config import COMIC_STYLE_NAMES
@@ -323,13 +335,29 @@ elif st.session_state.step == "imagens":
                                 changed = True
 
                 if changed:
-                    # Recompor a página se houve mudança no arrasto
-                    composer = ComicComposer()
-                    composed_page = composer.create_page(urls, quadros)
-                    buf = BytesIO()
-                    composed_page.save(buf, format="PNG")
-                    st.session_state[f"page_composed_{i}"] = buf.getvalue()
-                    st.rerun()
+                    st.session_state[f"page_dirty_{i}"] = True
+                    # Opcional: st.rerun() se quiser mostrar o aviso 'dirty' imediatamente, 
+                    # mas geralmente o próprio Streamlit recarrega ao interagir com widgets.
+
+                # v42.0: Botão Global de Commit e Aviso de Alterações Pendentes
+                if st.session_state.get(f"page_dirty_{i}"):
+                    st.warning(f"⚠️ Existem alterações de layout pendentes na Página {i+1}. O preview abaixo está desatualizado.")
+                    if st.button(f"🎨 Consolidar Layout (Render Final): Página {i+1}", key=f"commit_{i}", type="primary"):
+                        with st.spinner("Renderizando página final..."):
+                            composer = ComicComposer()
+                            composed_page = composer.create_page(urls, quadros)
+                            st.session_state[f"page_composed_{i}"] = composed_page
+                            st.session_state[f"page_dirty_{i}"] = False
+                            st.success("Layout consolidado com sucesso!")
+                            st.rerun()
+                elif f"page_composed_{i}" not in st.session_state and i in st.session_state.pages_images:
+                     # Se as imagens foram geradas mas a página nunca foi composta
+                     if st.button(f"✨ Criar Página {i+1}", key=f"initial_render_{i}"):
+                         with st.spinner("Compondo página inicial..."):
+                            composer = ComicComposer()
+                            composed_page = composer.create_page(urls, quadros)
+                            st.session_state[f"page_composed_{i}"] = composed_page
+                            st.rerun()
 
             if f"page_composed_{i}" in st.session_state:
                 st.image(st.session_state[f"page_composed_{i}"], caption=f"Página {i+1} Finalizada", use_container_width=True)
@@ -341,7 +369,7 @@ elif st.session_state.step == "imagens":
                 if i in st.session_state.pages_images:
                     cols = st.columns(len(st.session_state.pages_images[i]))
                     for idx, url in enumerate(st.session_state.pages_images[i]):
-                        cols[idx].image(url, caption=f"Q{idx+1}")
+                        cols[idx].image(url, caption=f"Q{idx+1}", use_container_width=True)
 
     col1, col2 = st.columns(2)
     if col1.button("⬅️ Voltar para Roteiro"):
