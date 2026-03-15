@@ -14,10 +14,11 @@ load_dotenv()
 # Carrega os prompts base das referências
 ROLES = get_all_roles()
 
-# Estilo Marvel Fixo para injeção automática (v22.0)
+# Estilo Marvel Genérico Profissional (v36.0)
 MARVEL_FIXED_STYLE = (
-    "Modern Marvel digital comic illustration, clean sharp ink line art, "
-    "vibrant colors, cinematic lighting, cell shading."
+    "Professional modern Marvel comic book illustration, "
+    "clean sharp ink line art, vibrant cinematic colors, "
+    "dramatic chiaroscuro lighting, masterpiece quality."
 )
 
 class QuadroSchema(BaseModel):
@@ -42,17 +43,16 @@ def get_script_writer_agent(model_id: str = "gpt-4o", language: str = "Portuguê
     """Retorna o agente responsável por escrever o roteiro no padrão v22.0."""
     base_instructions = [
         f"Você é o Roteirista sênior da LessonAI. Idioma: {language}.",
-        "PADRÃO EDITORIAL PIXEL-PERFECT v22.0:",
-        "  1. ARTE: FOQUE APENAS NA CENA. O estilo Marvel será injetado automaticamente. "
-        "     PROIBIDO usar palavras como 'speech bubble', 'caption', 'text', 'panel' na descrição.",
-        "  2. CONSISTÊNCIA: Descreva sempre 'same outfit', 'same hairstyle' e 'same physical design' para personagens recorrentes.",
-        "  3. ESTRUTURA VISUAL: [Personagem + Ação], [Ambiente], [Iluminação], [Clima Visual].",
-        "  4. DIÁLOGOS (CRÍTICO): Ideal 8-18 palavras. Máximo absoluto 22. UMA ideia por balão.",
-        "  5. ZERO RUÍDO: NÃO inclua nomes de personagens ou 'NARRADOR:' no campo 'dialogo'.",
-        "  6. ALL CAPS: Escreva todo o conteúdo de 'dialogo' EM MAIÚSCULAS.",
-        "  7. LAYOUT: Gere sempre entre 4 e 6 quadros por página para encaixar no layout físico.",
-        "  8. TIPOS: Use obrigatoriamente: fala, narracao, pensamento, grito, sussurro, eletronico.",
-        "  9. ÂNCORAS: Se possível, estime personagem_pos [x, y] onde 0,0 é topo-esquerda do quadro."
+        "PADRÃO EDITORIAL QUANTUM v36.0:",
+        "  1. ARTE: FOQUE APENAS NA CENA. O estilo Marvel será injetado automaticamente.",
+        "  2. CONSCIÊNCIA DE DENSIDADE: Máximo 22 palavras. Ideal 12-15 palavras.",
+        "  3. PLANEJAMENTO DE LAYOUT (OBRIGATÓRIO):",
+        "     - Use 'personagem_pos' [x, y] com valores de 0 a 1000.",
+        "     - Ex: [500, 500] é o centro absoluto. [200, 200] é topo-esquerda.",
+        "     - O sistema usará isso para ancorar a cauda e afastar o balão do rosto.",
+        "  4. ZERO RUÍDO: NÃO inclua nomes ou 'NARRADOR:' no campo 'dialogo'.",
+        "  5. ALL CAPS: Todo o conteúdo de 'dialogo' EM MAIÚSCULAS.",
+        "  6. QUADROS: Gere sempre entre 4 e 6 quadros por página."
     ]
     if custom_instructions:
         base_instructions.extend(custom_instructions)

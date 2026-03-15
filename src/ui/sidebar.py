@@ -24,6 +24,11 @@ def render_sidebar():
     img_provider = st.sidebar.selectbox("Provedor Imagem", ["OpenAI", "Replicate", "Stability", "Gemini"])
     img_model = st.sidebar.text_input("Modelo Imagem", value="dall-e-3")
     
+    # v40.0: Mock Mode Toggle
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("💰 Economia de Custos")
+    st.session_state.image_mock = st.sidebar.checkbox("Modo Mock (Sem gasto de IA)", value=st.session_state.get("image_mock", False), help="Quando ativo, usa uma imagem local fixa em vez de chamar a API paga.")
+    
     st.sidebar.divider()
     
     # 3. Gerenciamento (CRUDs)

@@ -14,6 +14,20 @@ class ImageEngine:
         
     def generate(self, prompt: str, size: str = "1024x1024") -> str:
         """Gera imagem e retorna a URL ou o path local."""
+        # v40.0: Image Mocking System
+        import streamlit as st
+        mock_active = os.environ.get("IMAGE_MOCK", "false").lower() == "true" or st.session_state.get("image_mock", False)
+        
+        if mock_active:
+            # Retorna uma imagem local em Base64 para economizar créditos e burlar problemas de rede
+            mock_path = os.path.join("assets", "comic_mock.png")
+            if os.path.exists(mock_path):
+                import base64
+                with open(mock_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode()
+                    return f"data:image/png;base64,{encoded_string}"
+            return "https://via.placeholder.com/1024x1024.png?text=MOCK+MODE+ACTIVE"
+
         provider = self.provider.lower()
         if provider == "openai":
             return self._generate_openai(prompt, size)

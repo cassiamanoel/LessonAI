@@ -1,6 +1,32 @@
 import streamlit as st
 import json
 from io import BytesIO
+import streamlit.elements.lib.image_utils as image_utils
+import streamlit.elements.image as st_image
+from streamlit.runtime.runtime import Runtime
+import io
+
+# v39.2: Monkeypatch cirúrgico para compatibilidade com streamlit-drawable-canvas no Streamlit 1.55+
+def image_to_url_patch(image, layout_config, clamp, channels, output_format, image_id):
+    if isinstance(image, str) and (image.startswith("http") or image.startswith("data:")):
+        return image
+    if not isinstance(image, (bytes, str)):
+        buffered = io.BytesIO()
+        image.save(buffered, format="PNG")
+        image_data = buffered.getvalue()
+    else:
+        image_data = image
+    mimetype = "image/png"
+    try:
+        return Runtime.instance().media_file_mgr.add(image_data, mimetype, image_id)
+    except Exception:
+        return ""
+
+if not hasattr(image_utils, "image_to_url"):
+    image_utils.image_to_url = image_to_url_patch
+if not hasattr(st_image, "image_to_url"):
+    st_image.image_to_url = image_to_url_patch
+
 from src.ui.sidebar import render_sidebar
 from src.agents.editorial import ComicScriptGenerator
 from src.pipeline.image_engine import ImageEngine
@@ -66,11 +92,12 @@ elif st.session_state.step == "roteiro":
                 # Iterar sobre quadros
                 for j, q in enumerate(pg.get("quadros", [])):
                     st.markdown(f"**Quadro {j+1}**")
-                    col1, col2, col3 = st.columns([2, 1, 0.5])
+                    col1, col2 = st.columns([2, 1])
                     q["descricao"] = col1.text_area(f"Descrição Visual (Q{j+1})", value=q.get("descricao", ""), key=f"q_desc_{i}_{j}")
                     q["dialogo"] = col2.text_area(f"Diálogo/Narração (Q{j+1})", value=q.get("dialogo", ""), key=f"q_dial_{i}_{j}")
-                    q["tipo_texto"] = col3.selectbox("Tipo", ["fala", "narracao", "sussurro", "grito"], index=0 if q.get("tipo_texto") == "fala" else (1 if q.get("tipo_texto") == "narracao" else (2 if q.get("tipo_texto") == "sussurro" else 3)), key=f"q_type_{i}_{j}")
-                    q["personagens"] = col1.text_input(f"Personagens (Q{j+1})", value=", ".join(q.get("personagens", [])), key=f"q_char_{i}_{j}").split(",")
+                    
+                    # Controles Manuais v38.0
+                    q["personagens"] = st.text_input(f"Personagens (Q{j+1})", value=", ".join(q.get("personagens", [])), key=f"q_char_{i}_{j}").split(",")
                     q["personagens"] = [p.strip() for p in q["personagens"] if p.strip()]
                     st.divider()
     else:
@@ -136,8 +163,119 @@ elif st.session_state.step == "imagens":
                     buf = BytesIO()
                     composed_page.save(buf, format="PNG")
                     st.session_state[f"page_composed_{i}"] = buf.getvalue()
-                
                 st.success(f"Página {i+1} concluída!")
+
+            # v39.0: Editor de Layout Interativo
+            if i in st.session_state.pages_images:
+                from streamlit_drawable_canvas import st_canvas
+                import numpy as np
+                from PIL import Image
+                import requests
+                
+                st.write("---")
+                st.markdown(f"#### 🛠️ Editor de Layout: Página {i+1}")
+                st.info("Arraste o retângulo vermelho para posicionar o balão. A página será recomposta automaticamente.")
+                
+                urls = st.session_state.pages_images[i]
+                quadros = pg.get("quadros", [])
+                
+                changed = False
+                cols_canvas = st.columns(len(urls))
+                for idx, (url, q) in enumerate(zip(urls, quadros)):
+                    with cols_canvas[idx]:
+                        st.caption(f"Quadro {idx+1}")
+                        
+                        # Carrega background
+                        if url.startswith("data:image"):
+                            import base64
+                            header, encoded = url.split(",", 1)
+                            data = base64.b64decode(encoded)
+                            bg_img = Image.open(BytesIO(data)).convert("RGB")
+                        else:
+                            res = requests.get(url)
+                            bg_img = Image.open(BytesIO(res.content)).convert("RGB")
+                        
+                        # v41.0: Controles Unificados
+                        from src.config.image_config import COMIC_STYLE_NAMES
+                        
+                        col_params = st.columns([2, 1])
+                        with col_params[0]:
+                            new_style = st.selectbox(
+                                "Estilo", 
+                                COMIC_STYLE_NAMES, 
+                                index=COMIC_STYLE_NAMES.index(q.get("tipo_texto", "fala")),
+                                key=f"style_{i}_{idx}"
+                            )
+                        with col_params[1]:
+                            new_intensity = st.number_input(
+                                "Escala", 
+                                0.5, 2.0, 
+                                float(q.get("intensity", 1.0)), 
+                                0.1,
+                                key=f"scale_{i}_{idx}"
+                            )
+                        
+                        if new_style != q.get("tipo_texto") or new_intensity != q.get("intensity"):
+                            q["tipo_texto"] = new_style
+                            q["intensity"] = new_intensity
+                            changed = True
+                        
+                        # Valor inicial do balão no canvas (mapeado de manual_pos ou auto)
+                        m_pos = q.get("manual_pos") or [400, 100] # Default topo
+                        
+                        canvas_result = st_canvas(
+                            fill_color="rgba(255, 0, 0, 0.3)",
+                            stroke_width=2,
+                            stroke_color="#ff0000",
+                            background_image=bg_img, # v39.2: Voltou a ser PIL graças ao monkeypatch
+                            update_streamlit=True,
+                            height=250,
+                            width=250,
+                            drawing_mode="transform",
+                            initial_drawing={
+                                "version": "4.4.0",
+                                "objects": [{
+                                    "type": "rect",
+                                    "left": m_pos[0] * 250 / 1000,
+                                    "top": m_pos[1] * 250 / 1000,
+                                    "width": 80,
+                                    "height": 50,
+                                    "fill": "rgba(255, 0, 0, 0.3)",
+                                    "stroke": "#ff0000"
+                                }]
+                            },
+                            key=f"canvas_{i}_{idx}",
+                        )
+                        
+                        if canvas_result.json_data and "objects" in canvas_result.json_data:
+                            objects = canvas_result.json_data["objects"]
+                            if objects:
+                                obj = objects[-1] # Pega o último movimento
+                                # Coordenadas e Dimensões Reais (considerando escala do canvas)
+                                vis_w = obj["width"] * obj["scaleX"]
+                                vis_h = obj["height"] * obj["scaleY"]
+                                
+                                new_x = int(obj["left"] * 1000 / 250)
+                                new_y = int(obj["top"] * 1000 / 250)
+                                new_w = int(vis_w * 1000 / 250)
+                                new_h = int(vis_h * 1000 / 250)
+                                
+                                new_bbox = [new_x, new_y, new_w, new_h]
+                                
+                                if q.get("manual_bbox") != new_bbox:
+                                    q["manual_bbox"] = new_bbox
+                                    # Pos antiga p/ retrocompatibilidade se necessário
+                                    q["manual_pos"] = [new_x, new_y]
+                                    changed = True
+
+                if changed:
+                    # Recompor a página se houve mudança no arrasto
+                    composer = ComicComposer()
+                    composed_page = composer.create_page(urls, quadros)
+                    buf = BytesIO()
+                    composed_page.save(buf, format="PNG")
+                    st.session_state[f"page_composed_{i}"] = buf.getvalue()
+                    st.rerun()
 
             if f"page_composed_{i}" in st.session_state:
                 st.image(st.session_state[f"page_composed_{i}"], caption=f"Página {i+1} Finalizada", use_container_width=True)

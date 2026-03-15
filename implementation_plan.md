@@ -53,6 +53,32 @@ UI interativa e CRUDs de configuração.
 
 ---
 
+### [v42.0] Aesthetic Refinement & Distortion Fix
+Melhoria na geometria e aparência dos balões para eliminar distorção (pancakes) e layout "pobre".
+
+#### [MODIFY] [src/pipeline/composer.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/composer.py)
+- **Aspect Ratio Control**: Adaptar `_calculate_balloon_metrics` para garantir proporções equilibradas (fuga do achatamento horizontal).
+- **Quantum Tails 2.0**: Implementar bases mais largas e caudas "espessas" (tapered) para melhor visual.
+- **Visual Depth**: Adicionar sombras (dropshadows) sutis nos balões.
+- **Smoothing**: Aplicar filtros de suavização nas bordas das formas geométricas.
+- **Shape Adaptive**: Usar Rounded Rectangles para textos longos de linha única.
+
+---
+
+### [v43.0] Absolute BBox Fidelity (Source of Truth)
+Eliminar discrepâncias entre o Editor de Layout e a imagem final usando `manual_bbox` como prioridade absoluta.
+
+#### [MODIFY] [app.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/app.py)
+- **BBox Tracking**: Capturar `left`, `top`, `width * scaleX` e `height * scaleY` do canvas.
+- **Normalization**: Salvar como `manual_bbox` em coordenadas 0-1000.
+
+#### [MODIFY] [src/pipeline/composer.py](file:///c:/Users/andre/OneDrive/Documentos/LessonAI/src/pipeline/composer.py)
+- **Absolute Override**: Se `manual_bbox` existir, ignorar `_calculate_balloon_metrics` para dimensões.
+- **Fixed Dimensions**: Forçar `bw` e `bh` do balão para bater com o BBox manual.
+- **No Snapping**: Desativar heurísticas de ajuste fino quando o posicionamento for manual.
+
+---
+
 ## Verification Plan
 
 ### Automated Tests
