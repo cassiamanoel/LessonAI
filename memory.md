@@ -101,5 +101,29 @@ Este arquivo serve como o diário de bordo técnico e estratégico do projeto Le
     - [x] Composer: Implementei o override absoluto. Se o BBox manual existir, o Pillow usa exatamente aquelas dimensões, sem recalcular nada.
 *   **Meu Pensamento:** O balão agora é previsível. Antes, o `manual_pos` era apenas uma sugestão de "ancoragem", mas o tamanho ainda era flutuante. Agora, o retângulo vermelho no editor é o contrato final: o que você desenha ali é o que sai no PNG.
 
+### [x] v45.0: Smart Character Targeting (Vision-Based)
+*   **O que realizei:**
+    - [x] Pipeline: Criei o `VisionEngine` usando Gemini 1.5 Flash para detectar automaticamente as coordenadas do rosto do personagem principal.
+    - [x] App: Integrei a análise visual logo após a geração da imagem, preenchendo o campo `personagem_pos` automaticamente.
+*   **Meu Pensamento:** A composição agora é "consciente" do conteúdo da imagem. Antes as caudas apontavam para um ponto genérico; hoje, a I.A. "olha" para o quadro, vê quem é o protagonista e direciona a fala exatamente para ele, poupando trabalho manual de ajuste.
+
+### [x] v45.1: Smart Anchor Precision (Target Selection)
+*   **O que realizei:**
+    - [x] Composer: Refinei `_resolve_anchor_v37` para selecionar o alvo da cauda baseando-se no personagem mais evidente (maior área de rosto/corpo).
+    - [x] Lógica de Separação: Garanti que a posição manual do balão (`manual_bbox`) não interfira na âncora, mantendo o alvo sempre no personagem.
+*   **Meu Pensamento:** A inteligência visual agora tem prioridade narrativa. Mesmo que o usuário arraste o balão para longe, a cauda sabe exatamente quem está falando porque ela "busca" o rosto mais proeminente no quadro. Isso resolve o problema de caudas apontando para o vazio.
+
+### [x] v46.0: Manual Tail Target Control
+*   **O que realizei:**
+    - [x] App: Adicionei um segundo "handle" (círculo verde) no Editor de Layout via `st_canvas`. Agora o usuário pode mover o balão e o alvo da cauda de forma independente.
+    - [x] Composer: Implementei `_resolve_tail_target` com prioridade estrita: Ajuste Manual > Detecção Vision > Geometria de Rostos > Geometria de Corpos > Centro.
+*   **Meu Pensamento:** Demos o "controle de diretor" final para o usuário. A automação (Vision) faz 90% do trabalho, mas se o usuário quiser que a cauda aponte para um detalhe específico (como uma arma, um objeto ou um personagem secundário), ele simplesmente arrasta a mira verde.
+
+### [x] v47.0: 360º Tail Control (Handle Origin & Target)
+*   **O que realizei:**
+    - [x] App: Controle triplo no Editor (Balão + Alvo + Origem). Adicionei um handle azul para a origem da cauda e uma linha de guia visual.
+    - [x] Composer: Implementei o suporte ao `manual_tail_origin` com lógica de "snapping". A cauda agora gruda na borda do balão mesmo se o handle for movido para fora, garantindo integridade visual.
+*   **Meu Pensamento:** Liberdade criativa total. O usuário agora pode rotacionar a seta 360º, movendo a saída do balão para o topo, lados ou base, permitindo composições muito mais dinâmicas e evitando que a cauda cruze o texto ou o rosto do personagem de forma estranha.
+
 ---
 *Última atualização: 2026-03-15 - Antigravity AI*

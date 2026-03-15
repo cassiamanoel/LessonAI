@@ -30,6 +30,7 @@ if not hasattr(st_image, "image_to_url"):
 from src.ui.sidebar import render_sidebar
 from src.agents.editorial import ComicScriptGenerator
 from src.pipeline.image_engine import ImageEngine
+from src.pipeline.vision_engine import VisionEngine
 from src.pipeline.prompt_builder import build_consolidated_visual_prompt
 from src.pipeline.composer import ComicComposer
 from src.config.managers import CharacterManager
@@ -145,7 +146,15 @@ elif st.session_state.step == "imagens":
                             url = img_engine.generate(prompt)
                             if url:
                                 urls.append(url)
-                                st.success(f"✅ Quadro {idx+1}: Arte gerada com sucesso!")
+                                # v45.0: Smart Vision Targeting
+                                with st.spinner(f"🔍 Analisando Quadro {idx+1} para identificar personagens..."):
+                                    vision = VisionEngine()
+                                    target_pos = vision.detect_main_character(url)
+                                    if target_pos != [500, 500]:
+                                        q["personagem_pos"] = target_pos
+                                        # Também injetamos como face_bbox se for muito preciso, 
+                                        # mas personaggio_pos é mais seguro p/ a cauda
+                                st.success(f"✅ Quadro {idx+1}: Arte gerada e personagem identificado!")
                             else:
                                 st.error(f"❌ Quadro {idx+1}: Falha na geração de arte.")
                                 urls.append("https://placehold.co/1024x1024?text=ARTE+NAO+GERADA")
@@ -220,53 +229,98 @@ elif st.session_state.step == "imagens":
                             q["intensity"] = new_intensity
                             changed = True
                         
-                        # Valor inicial do balão no canvas (mapeado de manual_pos ou auto)
-                        m_pos = q.get("manual_pos") or [400, 100] # Default topo
+                        # Valor inicial do balão, do alvo e da origem
+                        m_bbox = q.get("manual_bbox")
+                        if m_bbox:
+                            rl, rt, rw, rh = [v * 250 / 1000 for v in m_bbox]
+                        else:
+                            m_pos_fallback = q.get("manual_pos") or [400, 100]
+                            rl, rt = m_pos_fallback[0] * 250 / 1000, m_pos_fallback[1] * 250 / 1000
+                            rw, rh = 80, 50 
                         
+                        t_pos = q.get("manual_tail_target") or q.get("personagem_pos") or [500, 500]
+                        tl, tt = t_pos[0] * 250 / 1000, t_pos[1] * 250 / 1000
+                        
+                        o_pos = q.get("manual_tail_origin") or [rl*1000/250 + rw*500/250, rt*1000/250 + rh*500/250]
+                        ol, ot = o_pos[0] * 250 / 1000, o_pos[1] * 250 / 1000
+
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 0, 0, 0.3)",
                             stroke_width=2,
                             stroke_color="#ff0000",
-                            background_image=bg_img, # v39.2: Voltou a ser PIL graças ao monkeypatch
-                            update_streamlit=True,
+                            background_image=bg_img,
+                            update_streamlit=q.get("manual_bbox") is not None,
                             height=250,
                             width=250,
                             drawing_mode="transform",
                             initial_drawing={
                                 "version": "4.4.0",
-                                "objects": [{
-                                    "type": "rect",
-                                    "left": m_pos[0] * 250 / 1000,
-                                    "top": m_pos[1] * 250 / 1000,
-                                    "width": 80,
-                                    "height": 50,
-                                    "fill": "rgba(255, 0, 0, 0.3)",
-                                    "stroke": "#ff0000"
-                                }]
+                                "objects": [
+                                    {
+                                        "type": "line",
+                                        "left": ol, "top": ot, "width": tl-ol, "height": tt-ot,
+                                        "x1": 0, "y1": 0, "x2": tl-ol, "y2": tt-ot,
+                                        "stroke": "rgba(255, 255, 255, 0.5)", "strokeWidth": 2, "id": "tail_line", "selectable": False
+                                    },
+                                    {
+                                        "type": "rect",
+                                        "left": rl, "top": rt, "width": rw, "height": rh,
+                                        "fill": "rgba(255, 0, 0, 0.3)", "stroke": "#ff0000", "id": "balloon"
+                                    },
+                                    {
+                                        "type": "circle",
+                                        "left": ol - 4, "top": ot - 4, "radius": 4,
+                                        "fill": "rgba(0, 0, 255, 0.7)", "stroke": "#0000ff", "id": "origin"
+                                    },
+                                    {
+                                        "type": "circle",
+                                        "left": tl - 5, "top": tt - 5, "radius": 5,
+                                        "fill": "rgba(0, 255, 0, 0.7)", "stroke": "#00ff00", "id": "target"
+                                    }
+                                ]
                             },
                             key=f"canvas_{i}_{idx}",
                         )
                         
                         if canvas_result.json_data and "objects" in canvas_result.json_data:
                             objects = canvas_result.json_data["objects"]
-                            if objects:
-                                obj = objects[-1] # Pega o último movimento
-                                # Coordenadas e Dimensões Reais (considerando escala do canvas)
-                                vis_w = obj["width"] * obj["scaleX"]
-                                vis_h = obj["height"] * obj["scaleY"]
-                                
-                                new_x = int(obj["left"] * 1000 / 250)
-                                new_y = int(obj["top"] * 1000 / 250)
-                                new_w = int(vis_w * 1000 / 250)
-                                new_h = int(vis_h * 1000 / 250)
-                                
-                                new_bbox = [new_x, new_y, new_w, new_h]
-                                
-                                if q.get("manual_bbox") != new_bbox:
-                                    q["manual_bbox"] = new_bbox
-                                    # Pos antiga p/ retrocompatibilidade se necessário
-                                    q["manual_pos"] = [new_x, new_y]
-                                    changed = True
+                            current_bbox = None
+                            current_target = None
+                            current_origin = None
+                            
+                            for obj in objects:
+                                vis_l = obj["left"]
+                                vis_t = obj["top"]
+                                if obj["type"] == "rect":
+                                    vis_w = obj["width"] * obj["scaleX"]
+                                    vis_h = obj["height"] * obj["scaleY"]
+                                    current_bbox = [
+                                        int(vis_l * 1000 / 250),
+                                        int(vis_t * 1000 / 250),
+                                        int(vis_w * 1000 / 250),
+                                        int(vis_h * 1000 / 250)
+                                    ]
+                                elif obj["type"] == "circle":
+                                    rad = obj["radius"] * obj["scaleX"]
+                                    cx = int((vis_l + rad) * 1000 / 250)
+                                    cy = int((vis_t + rad) * 1000 / 250)
+                                    
+                                    # Diferencia origem de alvo pela cor ou pela ordem (simplificado aqui por tipo e ID se disponível)
+                                    if obj.get("stroke") == "#00ff00": # Alvo (Verde)
+                                        current_target = [cx, cy]
+                                    else: # Origem (Azul)
+                                        current_origin = [cx, cy]
+                            
+                            if current_bbox and q.get("manual_bbox") != current_bbox:
+                                q["manual_bbox"] = current_bbox
+                                q["manual_pos"] = current_bbox[:2]
+                                changed = True
+                            if current_target and q.get("manual_tail_target") != current_target:
+                                q["manual_tail_target"] = current_target
+                                changed = True
+                            if current_origin and q.get("manual_tail_origin") != current_origin:
+                                q["manual_tail_origin"] = current_origin
+                                changed = True
 
                 if changed:
                     # Recompor a página se houve mudança no arrasto

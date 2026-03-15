@@ -171,8 +171,8 @@ class ComicComposer:
         intensity = float(data.get("intensity", 1.0))
         base_scale = float(self.scales.get(style, 1.0)) * intensity
         
-        # Sincronia de Âncora v37.0
-        anchor = self._resolve_anchor_v37(panel_rect, data)
+        # v46.0: Sincronia de Alvo da Cauda
+        anchor = self._resolve_tail_target(panel_rect, data)
         
         # Ciclo de Auto-Shrink (3 tentativas para blindagem absoluta)
         best_overall_pos = None
@@ -234,9 +234,10 @@ class ComicComposer:
 
         if not best_overall_pos: return
 
+        m_origin = data.get("manual_tail_origin")
         px, py = best_overall_pos
         self._draw_balloon_v37_geometric(image, text, (px, py, px + final_bw, py + final_bh), 
-                                        final_lines, final_font, anchor, style, panel_rect)
+                                        final_lines, final_font, anchor, style, panel_rect, m_origin)
         self.occupied_regions.append([px, py, px + final_bw, py + final_bh])
 
     def _calculate_balloon_metrics(self, text, style, scale, panel_rect):
@@ -308,25 +309,77 @@ class ComicComposer:
         
         return score
 
-    def _resolve_anchor_v37(self, panel_rect, data):
+    def _resolve_tail_target(self, panel_rect, data):
+        """
+        v46.0: Resolução do alvo da cauda com prioridade estrita:
+        1. manual_tail_target (Círculo no editor)
+        2. personagem_pos (Vision ou Manual)
+        3. Maior face_bbox
+        4. Maior character_bbox
+        5. Fallback centro
+        """
         x, y, w, h = panel_rect
-        # 1. Prioridade: personnage_pos (0-1000)
+        
+        # 1. Prioridade Máxima: manual_tail_target [x, y] 0-1000
+        mt = data.get("manual_tail_target")
+        if mt and isinstance(mt, list) and len(mt) == 2:
+            return (int(x + mt[0] * w / 1000), int(y + mt[1] * h / 1000))
+
+        # 2. Prioridade 2: personagem_pos (Vision Engine ou Manual legada)
         pos = data.get("personagem_pos")
         if pos and isinstance(pos, list) and len(pos) == 2:
             return (int(x + pos[0] * w / 1000), int(y + pos[1] * h / 1000))
             
-        # 2. Fallback: centro do rosto ou corpo
-        for fh in self.forbidden_hard:
-            return ((fh[0] + fh[2]) // 2, (fh[1] + fh[3]) // 2)
-        for fs in self.forbidden_soft:
-            return ((fs[0] + fs[2]) // 2, fs[1] + 20) # Topo do corpo
-            
+        # 3. Prioridade 3: Maior Rosto (deteção geométrica)
+        best_face = None
+        max_area = -1
+        for fb in self.forbidden_hard:
+            area = (fb[2] - fb[0]) * (fb[3] - fb[1])
+            if area > max_area:
+                max_area = area
+                best_face = ((fb[0] + fb[2]) // 2, (fb[1] + fb[3]) // 2)
+        if best_face: return best_face
+        
+        # 4. Prioridade 4: Maior Corpo
+        max_area = -1
+        best_body = None
+        for cb in self.forbidden_soft:
+            area = (cb[2] - cb[0]) * (cb[3] - cb[1])
+            if area > max_area:
+                max_area = area
+                best_body = ((cb[0] + cb[2]) // 2, int(cb[1] + (cb[3]-cb[1])*0.2))
+        if best_body: return best_body
+
+        # 5. Fallback centro inferior
         return (x + w // 2, y + int(h * 0.75))
 
-    def _draw_balloon_v37_geometric(self, image, text, rect, lines, font, anchor, style, panel_rect):
+    def _draw_balloon_v37_geometric(self, image, text, rect, lines, font, anchor, style, panel_rect, manual_origin=None):
         draw = ImageDraw.Draw(image)
         x1, y1, x2, y2 = rect
         bcx, bcy = (x1 + x2) // 2, (y1 + y2) // 2
+        
+        # v47.0: Ponto de saída da cauda
+        if manual_origin and isinstance(manual_origin, list) and len(manual_origin) == 2:
+            # Converte 0-1000 para pixels reais no painel
+            tx_raw = panel_rect[0] + (manual_origin[0] * panel_rect[2] / 1000)
+            ty_raw = panel_rect[1] + (manual_origin[1] * panel_rect[3] / 1000)
+            # Snapping: Força o ponto a ficar na borda do balão
+            tx = max(x1, min(x2, tx_raw))
+            ty = max(y1, min(y2, ty_raw))
+            
+            # Se estiver "dentro", projeta para a borda mais próxima
+            if x1 < tx < x2 and y1 < ty < y2:
+                dist_l, dist_r = abs(tx - x1), abs(tx - x2)
+                dist_t, dist_b = abs(ty - y1), abs(ty - y2)
+                min_dist = min(dist_l, dist_r, dist_t, dist_b)
+                if min_dist == dist_l: tx = x1
+                elif min_dist == dist_r: tx = x2
+                elif min_dist == dist_t: ty = y1
+                else: ty = y2
+        else:
+            # Fallback automático
+            tx, ty = self._choose_tail_exit(rect, anchor, 
+                                            pad=0.85 if style in ("pensamento", "nuvem") else 1.0)
         
         # v42.0: Dropshadow (Profundidade Visual)
         shadow_offset = 6
@@ -334,7 +387,6 @@ class ComicComposer:
         
         # Geometric Fidelity v42.0
         if style in ("pensamento", "ideia", "duvida", "admiracao", "silencio", "musica", "raiva"):
-            tx, ty = self._choose_tail_exit(rect, anchor, pad=0.85)
             # Sombra da nuvem/cloud
             self._draw_cloud(draw, shadow_rect, dark=False, is_shadow=True)
             self._draw_cloud(draw, rect, dark=(style=="raiva"))
@@ -342,20 +394,17 @@ class ComicComposer:
             if style not in ("musica", "raiva"): self._draw_thought_tail(draw, (tx, ty), anchor)
             if style == "raiva": self._draw_tail_quantum(draw, (tx, ty), anchor, width=35)
         elif style in ("grito", "enfatico", "choro"):
-            tx, ty = self._choose_tail_exit(rect, anchor, pad=1.1)
             spikes = 26 if style == "grito" else 18
             # Sombra do burst
             self._draw_burst(draw, shadow_rect, spikes=spikes, is_shadow=True)
             self._draw_burst(draw, rect, spikes=spikes, dripping=(style=="choro"))
             self._draw_tail_quantum(draw, (tx, ty), anchor, width=36 if style == "grito" else 28)
         elif style == "eletronico":
-            tx, ty = self._choose_tail_exit(rect, anchor, pad=1.0)
             # Sombra do jagged
             self._draw_jagged_rect(draw, shadow_rect, is_shadow=True)
             self._draw_jagged_rect(draw, rect)
             self._draw_tail_quantum(draw, (tx, ty), anchor, width=24)
         else:
-            tx, ty = self._choose_tail_exit(rect, anchor, pad=0.98)
             # v42.0: Sombra e Forma Dinâmica (Elipse vs Rounded Rect)
             is_long = (x2 - x1) > (y2 - y1) * 1.8
             radius = 35
