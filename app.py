@@ -346,7 +346,10 @@ elif st.session_state.step == "imagens":
                         with st.spinner("Renderizando página final..."):
                             composer = ComicComposer()
                             composed_page = composer.create_page(urls, quadros)
-                            st.session_state[f"page_composed_{i}"] = composed_page
+                            # Salva em bytes para garantir compatibilidade total
+                            buf = BytesIO()
+                            composed_page.save(buf, format="PNG")
+                            st.session_state[f"page_composed_{i}"] = buf.getvalue()
                             st.session_state[f"page_dirty_{i}"] = False
                             st.success("Layout consolidado com sucesso!")
                             st.rerun()
@@ -356,7 +359,9 @@ elif st.session_state.step == "imagens":
                          with st.spinner("Compondo página inicial..."):
                             composer = ComicComposer()
                             composed_page = composer.create_page(urls, quadros)
-                            st.session_state[f"page_composed_{i}"] = composed_page
+                            buf = BytesIO()
+                            composed_page.save(buf, format="PNG")
+                            st.session_state[f"page_composed_{i}"] = buf.getvalue()
                             st.rerun()
 
             if f"page_composed_{i}" in st.session_state:

@@ -184,26 +184,28 @@ class ComicComposer:
         manual_p = data.get("manual_pos")
         
         if m_bbox and isinstance(m_bbox, list) and len(m_bbox) == 4:
-            # Converte 0-1000 para pixels reais no painel
-            px1 = panel_rect[0] + (m_bbox[0] * panel_rect[2] / 1000)
-            py1 = panel_rect[1] + (m_bbox[1] * panel_rect[3] / 1000)
-            bw = m_bbox[2] * panel_rect[2] / 1000
-            bh = m_bbox[3] * panel_rect[3] / 1000
+            # v51.0: Auto-fit mesmo em manual_bbox (Respeitando limites do usuário)
+            px1_n, py1_n, bw_n, bh_n = m_bbox
+            px1 = panel_rect[0] + (px1_n * panel_rect[2] / 1000)
+            py1 = panel_rect[1] + (py1_n * panel_rect[3] / 1000)
+            bw_p = bw_n * panel_rect[2] / 1000
+            bh_p = bh_n * panel_rect[3] / 1000
             
-            # Para o texto, usamos o bw forçado e calculamos as linhas
-            draw_tmp = ImageDraw.Draw(Image.new("RGB", (1, 1)))
-            fs = int(self.base_size * base_scale)
-            font = self._load_font_at_size(style, fs)
-            # Padding dinâmico baseado no tamanho do balão
-            pad_w = bw * 0.18
-            lines = self._wrap_text_pixels(draw_tmp, text, font, bw - pad_w)
-            
+            # Ajusta o texto ao box manual
+            final_bw, final_bh, final_lines, final_font = self._fit_text_to_target_box(
+                text, style, base_scale, bw_p, bh_p, panel_rect, can_expand=True
+            )
             best_overall_pos = (px1, py1)
-            final_bw, final_bh, final_lines, final_font = bw, bh, lines, font
+            # A posição pode ter sido ajustada se o balão expandiu
+            if final_bw > bw_p or final_bh > bh_p:
+                 # Reposiciona se necessário para não sair do painel no topo/esquerda
+                 px1 = max(panel_rect[0], min(panel_rect[0] + panel_rect[2] - final_bw, px1))
+                 py1 = max(panel_rect[1], min(panel_rect[1] + panel_rect[3] - final_bh, py1))
+                 best_overall_pos = (px1, py1)
             
         elif manual_p and isinstance(manual_p, list) and len(manual_p) == 2:
             scale = base_scale
-            bw, bh, lines, font = self._calculate_balloon_metrics(text, style, scale, panel_rect)
+            bw, bh, lines, font = self._calculate_balloon_metrics_autofit(text, style, scale, panel_rect)
             # Converte 0-1000 para pixels absolutos
             px1 = panel_rect[0] + (manual_p[0] * panel_rect[2] / 1000)
             py1 = panel_rect[1] + (manual_p[1] * panel_rect[3] / 1000)
@@ -212,7 +214,7 @@ class ComicComposer:
         else:
             for attempt in range(3):
                 scale = base_scale * (0.9 ** attempt)
-                bw, bh, lines, font = self._calculate_balloon_metrics(text, style, scale, panel_rect)
+                bw, bh, lines, font = self._calculate_balloon_metrics_autofit(text, style, scale, panel_rect)
                 
                 candidates = self._get_candidate_positions(panel_rect, bw, bh)
                 best_score, best_pos = -float('inf'), None
@@ -241,30 +243,94 @@ class ComicComposer:
                                         final_lines, final_font, anchor, style, panel_rect, m_origin)
         self.occupied_regions.append([px, py, px + final_bw, py + final_bh])
 
-    def _calculate_balloon_metrics(self, text, style, scale, panel_rect):
+    def _calculate_balloon_metrics_autofit(self, text, style, target_scale, panel_rect):
+        """v51.0: Auto-fit dinâmico com regras de expansão."""
+        # Chute inicial baseado no painel
+        max_bw = int(panel_rect[2] * 0.7 * target_scale)
+        max_bh = int(panel_rect[3] * 0.5 * target_scale)
+        return self._fit_text_to_target_box(text, style, target_scale, max_bw, max_bh, panel_rect, can_expand=True)
+
+    def _fit_text_to_target_box(self, text, style, scale, target_bw, target_bh, panel_rect, can_expand=True):
+        """
+        Refatoração v51.0: O coração do Auto-Fit.
+        Tenta reduzir a fonte até caber. Se chegar no mínimo e não couber, expande o box.
+        """
+        min_pt = 7.0 # Tamanho mínimo legível
+        pt_to_px = self.dpi / 72.0
+        min_fs = int(min_pt * pt_to_px)
+        
+        current_fs = int(self.base_size * scale)
         draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
-        fs = int(self.base_size * scale)
-        font = self._load_font_at_size(style, fs)
         
-        # v42.0: Controle Dinâmico de Wrapping para Aspect Ratio
-        # Reduzimos max_w para forçar quebras em textos curtos, evitando "panquecas"
-        max_w = int(panel_rect[2] * 0.45 * scale)
-        lines = self._wrap_text_pixels(draw, text, font, max_w)
+        # 1. Loop de redução progressiva (ponto a ponto aproximado)
+        while current_fs >= min_fs:
+            font = self._load_font_at_size(style, current_fs)
+            # Qual a área segura para este balão nas dimensões atuais?
+            safe_w, safe_h = self._get_safe_inner_area(style, target_bw, target_bh)
+            
+            # Wrap o texto para a largura segura
+            lines = self._wrap_text_pixels(draw, text, font, safe_w)
+            block_w, block_h = self._measure_text_block(lines, font)
+            
+            # Se couber na área segura, estamos feitos!
+            if block_w <= safe_w and block_h <= safe_h:
+                # Recalcula bw/bh finais para serem justos ao texto se for menor que o alvo,
+                # garantindo que safe_area contenha o bloco.
+                rw, rh = self._get_safe_ratios(style)
+                bw = max(target_bw, int(block_w / rw) + 10) if not can_expand else int(block_w / rw) + 10
+                bh = max(target_bh, int(block_h / rh) + 10) if not can_expand else int(block_h / rh) + 10
+                
+                # Regras de Aspect Ratio
+                if style not in ("narracao", "legenda", "eletronico"):
+                    if bw < bh * 1.2: bw = int(bh * 1.2)
+                    if bh < bw * 0.6: bh = int(bw * 0.6)
+                
+                return bw, bh, lines, font
+            
+            # Reduz font size
+            current_fs -= 2 # aprox 0.5 ponto
+            
+        # 2. Se falhou no tamanho mínimo, expandimos se permitido
+        if can_expand:
+            font = self._load_font_at_size(style, min_fs)
+            expansion = 1.05
+            for _ in range(12): # Tenta expandir até ~80%
+                target_bw = int(target_bw * expansion)
+                target_bh = int(target_bh * expansion)
+                safe_w, safe_h = self._get_safe_inner_area(style, target_bw, target_bh)
+                lines = self._wrap_text_pixels(draw, text, font, safe_w)
+                block_w, block_h = self._measure_text_block(lines, font)
+                
+                if block_w <= safe_w and block_h <= safe_h:
+                    rw, rh = self._get_safe_ratios(style)
+                    bw, bh = int(block_w / rw) + 5, int(block_h / rh) + 5
+                    return bw, bh, lines, font
         
-        lh = self._line_height(font, extra=int(fs * 0.45))
-        tw = max([draw.textbbox((0,0), l, font=font)[2] for l in lines] or [0])
-        th = lh * len(lines)
-        
-        # Padding Profissional
-        pw, ph = int(tw * 0.22) + 25, int(th * 0.35) + 20
-        bw, bh = tw + pw * 2, th + ph * 2
-        
-        # v42.0: Regra Anti-Panqueca (Min Aspect Ratio 1.2:1 para elipses)
-        if style not in ("narracao", "eletronico"):
-            if bw > bh * 2.5: # Muito achatado
-                bh = int(bw / 2.2)
-        
-        return bw, bh, lines, font
+        # Fallback resiliente
+        font = self._load_font_at_size(style, min_fs)
+        safe_w, _ = self._get_safe_inner_area(style, target_bw, target_bh)
+        lines = self._wrap_text_pixels(draw, text, font, safe_w)
+        return target_bw, target_bh, lines, font
+
+    def _get_safe_ratios(self, style):
+        """Retorna quanto por cento da largura/altura total é segura para texto."""
+        if style in ("narracao", "legenda"): return 0.90, 0.85
+        if style in ("fala", "pensamento", "sussurro"): return 0.75, 0.70
+        if style in ("grito", "burst", "raiva", "serrilhado", "burst_assimetrico"): return 0.55, 0.50
+        if style in ("flashback", "sonho", "organico", "nuvem"): return 0.65, 0.60
+        return 0.70, 0.65
+
+    def _get_safe_inner_area(self, style, bw, bh):
+        rw, rh = self._get_safe_ratios(style)
+        return int(bw * rw), int(bh * rh)
+
+    def _measure_text_block(self, lines, font):
+        if not lines: return 0, 0
+        draw = ImageDraw.Draw(Image.new("RGB", (1,1)))
+        widths = [draw.textbbox((0,0), l, font=font)[2] for l in lines]
+        tw = max(widths) if widths else 0
+        th = self._line_height(font, extra=int(font.size * 0.4)) * len(lines)
+        return tw, th
 
     def _get_candidate_positions(self, rect, bw, bh):
         x, y, w, h = rect
@@ -394,7 +460,12 @@ class ComicComposer:
         draw = ImageDraw.Draw(image)
         lh = self._line_height(font, extra=int(font.size * 0.4))
         th = lh * len(lines)
+        # v51.0: Centralização absoluta e segura
         cy = y1 + (y2 - y1 - th) // 2
+        # Se th for maior que o balão, forçamos o início em y1 + margem de segurança
+        if th > (y2 - y1):
+            cy = y1 + int((y2 - y1) * 0.1)
+        
         for l in lines:
             self._draw_styled_line(draw, l, bcx, cy, font); cy += lh
 
@@ -497,7 +568,7 @@ class ComicComposer:
     def _draw_narrative_quantum(self, image, text, panel_rect, data):
         draw = ImageDraw.Draw(image)
         x, y, w, h = panel_rect
-        bw, bh, lines, font = self._calculate_balloon_metrics(text, "narracao", 1.1, panel_rect)
+        bw, bh, lines, font = self._calculate_balloon_metrics_autofit(text, "narracao", 1.1, panel_rect)
         rx, ry = x + int(w * 0.05), y + int(h * 0.05)
         # Sombra suave v37
         draw.rectangle([rx+6, ry+6, rx + bw+6, ry + bh+6], fill="#333333") 
