@@ -16,18 +16,32 @@ def render_sidebar():
     # 2. Configurações de IA
     st.sidebar.subheader("Configurações Globais")
     language = st.sidebar.selectbox("Idioma do roteiro", ["Português", "English", "Español", "Français", "Deutsch", "Italiano"], index=0)
-    num_pages = st.sidebar.slider("Quantidade de Páginas", 1, 10, 5)
+    num_pages = st.sidebar.slider("Quantidade de Páginas", 1, 5, 5)
+    
+    from src.config.image_config import AVAILABLE_IMG_MODELS, AVAILABLE_LLM_MODELS, DEFAULT_IMAGE_MODEL, DEFAULT_LLM_MODEL
     
     llm_provider = st.sidebar.selectbox("Provedor LLM", ["OpenAI", "Gemini", "Claude", "OpenRouter"])
-    llm_model = st.sidebar.text_input("Modelo LLM", value="gpt-4o")
+    llm_model = st.sidebar.selectbox(
+        "Modelo LLM", 
+        AVAILABLE_LLM_MODELS, 
+        index=AVAILABLE_LLM_MODELS.index(DEFAULT_LLM_MODEL)
+    )
     
     img_provider = st.sidebar.selectbox("Provedor Imagem", ["OpenAI", "Replicate", "Stability", "Gemini"])
-    img_model = st.sidebar.text_input("Modelo Imagem", value="dall-e-3")
+    img_model = st.sidebar.selectbox(
+        "Modelo Imagem", 
+        AVAILABLE_IMG_MODELS, 
+        index=AVAILABLE_IMG_MODELS.index(DEFAULT_IMAGE_MODEL)
+    )
     
     # v40.0: Mock Mode Toggle
     st.sidebar.markdown("---")
     st.sidebar.subheader("💰 Economia de Custos")
-    st.session_state.image_mock = st.sidebar.checkbox("Modo Mock (Sem gasto de IA)", value=st.session_state.get("image_mock", False), help="Quando ativo, usa uma imagem local fixa em vez de chamar a API paga.")
+    st.session_state.image_mock = st.sidebar.checkbox(
+        "Modo Mock (Sem gasto de IA)", 
+        value=st.session_state.get("image_mock", True), 
+        help="Quando ativo, usa uma imagem local fixa em vez de chamar a API paga."
+    )
     
     st.sidebar.divider()
     

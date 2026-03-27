@@ -5,28 +5,36 @@ import base64
 import textwrap
 import math
 import os
+import copy
 import re
+from src.utils.debug_logger import DebugLogger
 from src.config.image_config import COMPOSER_STYLES, COMIC_SCALES, PLACEHOLDER_URLS
 from src.pipeline.balloon_presets import BalloonPresets
 
+class StrictRenderError(Exception):
+    """Exception raised when a required comic element (like a panel background) is missing in final mode."""
+    pass
+
 class ComicComposer:
     def __init__(self, dpi: int = 300):
-        # Professional Standard v36.0: Quantum Anatomy
+        # Master Spec v58.0: A4 Vertical @ 300 DPI
         self.dpi = dpi
-        self.width = int(174 / 25.4 * dpi)   # ~2055 px
-        self.height = int(266 / 25.4 * dpi)  # ~3142 px
+        self.width = 2480
+        self.height = 3508
 
-        # Estrutura Narrativa
-        self.gutter = int(1.2 / 25.4 * dpi)
+        # Estrutura Narrativa (Master Spec)
+        self.gutter = 26
+        self.safe_zone = 80
         
         # Estilo Quantum v36.0
         self.narrative_bg = COMPOSER_STYLES["narrative_bg"]
         self.bubble_bg = COMPOSER_STYLES["bubble_bg"]
         self.border_color = COMPOSER_STYLES["border_color"]
-        self.border_width = COMPOSER_STYLES["border_width"]
+        self.border_width = COMPOSER_STYLES["border_width"] # 8px p/ quadros
+        self.balloon_border = COMPOSER_STYLES.get("balloon_border", 6)
+        self.narrative_border = COMPOSER_STYLES.get("narrative_border", 6)
         self.gutter_fill = COMPOSER_STYLES["gutter_fill"]
-        self.safe_zone = int(COMPOSER_STYLES["safe_zone_mm"] / 25.4 * dpi)
-        self.tail_width = COMPOSER_STYLES.get("tail_width", 25)
+        self.tail_width = COMPOSER_STYLES.get("tail_width", 30)
 
         # Escalas Estritas
         self.scales = COMIC_SCALES
@@ -37,23 +45,10 @@ class ComicComposer:
         pt_to_px = dpi / 72.0
         self.base_size = int(8.0 * pt_to_px)
 
-        candidates_dialog = [
-            os.path.join(project_font_dir, "CCWildWords-Regular.ttf"),
-            os.path.join(project_font_dir, "AnimeAce2_reg.ttf"),
-            os.path.join(win_font_dir, "arial.ttf"),
-        ]
-        candidates_bold = [
-            os.path.join(project_font_dir, "CCWildWords-Bold.ttf"),
-            os.path.join(project_font_dir, "AnimeAce2_bld.ttf"),
-            os.path.join(win_font_dir, "arialbd.ttf"),
-        ]
-
-        self.font_ball = self._load_font(candidates_dialog, self.base_size)
-        self.font_ball_bold = self._load_font(candidates_bold, self.base_size)
-        self.font_narrative = self._load_font(candidates_dialog, int(self.base_size * 1.1))
+        self.font_ball = self._load_font([os.path.join(project_font_dir, "CCWildWords-Regular.ttf"), os.path.join(win_font_dir, "arial.ttf")], self.base_size)
+        self.font_ball_bold = self._load_font([os.path.join(project_font_dir, "CCWildWords-Bold.ttf"), os.path.join(win_font_dir, "arialbd.ttf")], self.base_size)
+        self.font_narrative = self._load_font([os.path.join(project_font_dir, "CCWildWords-Regular.ttf"), os.path.join(win_font_dir, "arial.ttf")], int(self.base_size * 1.1))
         
-        # Collision Map v37.0
-        self.forbidden_regions = []
         self.forbidden_hard = []
         self.forbidden_soft = []
         self.occupied_regions = []
@@ -65,42 +60,112 @@ class ComicComposer:
                 except: pass
         return ImageFont.load_default()
 
-    def create_page(self, images_urls: list, panels_data: list):
+    def _get_lettering_metrics(self, style):
+        # Master Spec v58.0: Padding e Tamanhos estritos
+        if style == "narracao":
+            return {"min_pt": 42, "max_pt": 54, "pad_h": 40, "pad_v": 30}
+        return {"min_pt": 44, "max_pt": 60, "pad_h": 40, "pad_v": 30}
+
+    def create_page(self, images_urls: list, panels_data: list, render_mode: str = "draft"):
+        """v61.0: Wrapper for backward compatibility. Now renders clean page + auto balloons."""
+        page = self.create_clean_page(images_urls, panels_data, render_mode)
+        
+        num_panels = len(images_urls)
+        panel_rects = self._get_panel_rects(num_panels)
+        
+        for idx in range(num_panels):
+            if idx >= len(panel_rects): break
+            rect = panel_rects[idx]
+            data = panels_data[idx] if idx < len(panels_data) else {}
+            
+            if data.get("dialogo") and data.get("layout_mode") != "manual_page":
+                self._place_balloon_absolute_shield(page, data, rect)
+                
+        return page
+
+    def create_clean_page(self, images_urls: list, panels_data: list, render_mode: str = "draft"):
+        """v61.0: Renders ONLY the panels (Clean Plate)."""
         page = Image.new("RGB", (self.width, self.height), self.gutter_fill)
         num_panels = len(images_urls)
-        if num_panels == 0: return page
+        panel_rects = self._get_panel_rects(num_panels)
+        
+        for idx in range(num_panels):
+            if idx >= len(panel_rects): break
+            self._render_panel(page, images_urls[idx], panel_rects[idx], render_mode=render_mode)
+            
+        return page
 
+    def render_balloons_on_page(self, page_image, balloons_data):
+        """
+        v61.0: Renders a list of balloons directly onto the page image.
+        balloons_data: List of dicts with {text, type, bbox, tail_origin, tail_target}
+        Coordinates are normalized 0-1000 relative to the PAGE.
+        """
+        for b_data in balloons_data:
+            self._render_standalone_balloon(page_image, b_data)
+        return page_image
+
+    def _render_standalone_balloon(self, image, b_data):
+        """Render individual balloon respecting user-defined bbox strictly."""
+        text = str(b_data.get("text", "")).strip()
+        if not text:
+            return
+        style = str(b_data.get("type", "fala")).lower()
+
+        # Page-normalized (0-1000) to absolute pixels
+        bn = b_data.get("bbox", [400, 100, 200, 150])
+        x1 = int(bn[0] * self.width / 1000)
+        y1 = int(bn[1] * self.height / 1000)
+        bw = max(int(bn[2] * self.width / 1000), 80)
+        bh = max(int(bn[3] * self.height / 1000), 50)
+
+        # Fit text STRICTLY within the user bbox (no expansion)
+        page_rect = (0, 0, self.width, self.height)
+        scale = float(b_data.get("intensity", 1.0)) * self.scales.get(style, 1.0)
+        _, _, lines, font = self._fit_text_to_target_box(
+            text, style, scale, bw, bh, page_rect, can_expand=False
+        )
+
+        # Tail target (where the tail points to)
+        tn = b_data.get("tail_target", [500, 500])
+        anchor = (int(tn[0] * self.width / 1000), int(tn[1] * self.height / 1000))
+
+        # Tail origin
+        on = b_data.get("tail_origin")
+        m_origin = on if on else None
+
+        # Use the EXACT user-defined bbox, not the fitted size
+        rect = (x1, y1, x1 + bw, y1 + bh)
+        self._draw_balloon_v37_geometric(image, text, rect, lines, font, anchor, style, page_rect, m_origin, extra_data=b_data)
+
+    def _get_panel_rects(self, num_panels):
+        # v58.0: Master Spec Specific Layout (5 Panels)
+        if num_panels == 5:
+            return [
+                (80, 80, 2320, 1050),    # Q1: Top Wide
+                (80, 1156, 1137, 760),   # Q2: Mid Left
+                (1243, 1156, 1157, 760), # Q3: Mid Right
+                (80, 1942, 980, 970),    # Q4: Bot Left
+                (1086, 1942, 1314, 1486) # Q5: Bot Right Vertical
+            ]
+        
+        # Fallback to dynamic layout
         tiers = self._choose_layout(num_panels)
         tier_heights = self._calculate_tier_heights(tiers)
-        y_offset, current_idx = 0, 0
-
+        rects = []
+        y_off = 0
         for t_idx, p_in_tier in enumerate(tiers):
             th = tier_heights[t_idx]
             pw = (self.width - ((p_in_tier - 1) * self.gutter)) // p_in_tier
             for p_idx in range(p_in_tier):
-                if current_idx >= num_panels: break
-                rect = (p_idx * (pw + self.gutter), y_offset, pw, th)
-                data = panels_data[current_idx] if current_idx < len(panels_data) else {}
-                
-                self._render_panel(page, images_urls[current_idx], rect)
-                
-                # Absolute Art Shield v37.0: Reset e Mapeamento Multinível
-                self.forbidden_hard = []  # Faces (Zero tolerância)
-                self.forbidden_soft = []  # Corpos (Tolerância parcial)
-                self._map_art_guard_v37(rect, data)
-                self.occupied_regions = []
-
-                if data.get("dialogo"):
-                    self._place_balloon_absolute_shield(page, data, rect)
-                
-                current_idx += 1
-            y_offset += th + self.gutter
-        return page
+                rects.append((p_idx * (pw + self.gutter), y_off, pw, th))
+            y_off += th + self.gutter
+        return rects
 
     def _choose_layout(self, num_panels):
         if num_panels <= 3: return [1] * num_panels
         if num_panels == 4: return [1, 2, 1]
-        if num_panels == 5: return [1, 2, 2]
+        if num_panels == 5: return [1, 2, 2] # (Fallback, will be bypassed if handled in _get_panel_rects)
         if num_panels == 6: return [1, 2, 2, 1]
         return [2] * (num_panels // 2) + ([1] if num_panels % 2 else [])
 
@@ -110,37 +175,54 @@ class ComicComposer:
         unit_h = ah / total_weight
         return [int(unit_h * (1.4 if t == 1 else 1.0)) for t in tiers]
 
-    def _render_panel(self, page, url, rect):
+    def _render_panel(self, page, data_source, rect, render_mode: str = "draft"):
         x, y, w, h = rect
-        if "placehold.co" in url or "via.placeholder.com" in url:
-            url = PLACEHOLDER_URLS["ERROR"] if "ERRO" in url.upper() else PLACEHOLDER_URLS["NOT_GENERATED"]
-
+        img = None
+        
         try:
-            if url.startswith("data:image"):
-                header, encoded = url.split(",", 1)
-                data = base64.b64decode(encoded)
-                img = Image.open(BytesIO(data)).convert("RGB")
-            elif url.startswith("http"):
-                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-                resp = requests.get(url, timeout=25, headers=headers)
-                img = Image.open(BytesIO(resp.content)).convert("RGB")
-            else: 
-                try: img = Image.open(url).convert("RGB")
-                except:
-                    img = Image.new("RGB", (w, h), (180, 180, 180))
-                    ImageDraw.Draw(img).text((10, h//2), "ARTE NAO ENCONTRADA", fill="black")
-            
-            img_fit = ImageOps.fit(img, (w, h), Image.Resampling.BICUBIC)
-            img_fit = img_fit.filter(ImageFilter.SHARPEN)
-            img_fit = ImageEnhance.Contrast(img_fit).enhance(1.1)
-            page.paste(img_fit, (x, y))
-            ImageDraw.Draw(page).rectangle([x, y, x+w, y+h], outline=self.border_color, width=self.border_width)
+            # v56.3: Suporte a data_source como bytes
+            if isinstance(data_source, bytes):
+                img = Image.open(BytesIO(data_source)).convert("RGB")
+            elif isinstance(data_source, str):
+                url = data_source
+                
+                # v59.0: Detecta e bloqueia placeholders em modo estrito
+                is_placeholder = any(p in url for p in ["placehold.co", "via.placeholder.com", "NOT_GENERATED"])
+                if render_mode == "final_comic" and is_placeholder:
+                    raise StrictRenderError(f"Painel em {rect} está sem arte real (detectado placeholder). Abortando renderização final.")
 
-            if url.startswith("data:image"):
-                msg = "FALHA NA API - USANDO PLACEHOLDER" if "ERROR" in url else "AGUARDANDO GERACAO"
-                ImageDraw.Draw(page).text((x + 10, y + h - 30), msg, fill="yellow")
-        except Exception as e: 
-            print(f"Erro Arte: {e}")
+                if url.startswith("data:image"):
+                    header, encoded = url.split(",", 1)
+                    data = base64.b64decode(encoded)
+                    img = Image.open(BytesIO(data)).convert("RGB")
+                elif url.startswith("http"):
+                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                    resp = requests.get(url, timeout=25, headers=headers)
+                    img = Image.open(BytesIO(resp.content)).convert("RGB")
+                else: 
+                    if os.path.exists(url):
+                        img = Image.open(url).convert("RGB")
+            
+            if img:
+                img = img.resize((w, h), Image.Resampling.LANCZOS)
+                page.paste(img, (x, y))
+                # Borda do Quadro (Master Spec v58.0: 8px)
+                draw = ImageDraw.Draw(page)
+                draw.rectangle([x, y, x + w, y + h], outline=self.border_color, width=self.border_width)
+            else:
+                raise ValueError("Fonte de imagem inválida ou inacessível")
+
+        except Exception as e:
+            if render_mode == "final_comic":
+                raise StrictRenderError(f"Erro no Painel {rect}: {str(e)}. A renderização final exige artes reais.")
+            
+            # Fallback para modo Draft (cinza escuro com aviso)
+            DebugLogger.log("IMAGE_RENDER_ERROR", "system", is_anomaly=True, extra={"error": str(e)})
+            img_err = Image.new("RGB", (w, h), (40, 40, 40))
+            draw_err = ImageDraw.Draw(img_err)
+            draw_err.text((20, h//2 - 10), "ARTE EM PROCESSAMENTO...", fill="#777777")
+            page.paste(img_err, (x, y))
+            ImageDraw.Draw(page).rectangle([x, y, x + w, y + h], outline=self.border_color, width=2)
 
     def _map_art_guard_v37(self, rect, data):
         # Converte normalizado (0-1000) para pixels absolutos do painel
@@ -164,16 +246,25 @@ class ComicComposer:
 
     def _place_balloon_absolute_shield(self, image, data, panel_rect):
         text = str(data.get("dialogo", "")).strip()
-        style = str(data.get("tipo_texto", "fala")).lower()
-        if style == "narracao":
+        
+        # v60.0: Prioridade absoluta para balloon_style (estilo manual)
+        style = str(data.get("balloon_style") or data.get("tipo_texto", "fala")).lower()
+        
+        if style == "narracao" or style == "legenda":
             self._draw_narrative_quantum(image, text, panel_rect, data)
             return
 
         intensity = float(data.get("intensity", 1.0))
         base_scale = float(self.scales.get(style, 1.0)) * intensity
         
-        # v46.0: Sincronia de Alvo da Cauda
-        anchor = self._resolve_tail_target(panel_rect, data)
+        # v60.0: Resolução do Alvo (Target) da Cauda - Heurística vs Manual
+        m_target = data.get("tail_target")
+        if m_target and isinstance(m_target, list) and len(m_target) == 2:
+            # Converte normalizado 0-1000 para pixels reais
+            anchor = (int(panel_rect[0] + m_target[0] * panel_rect[2] / 1000), 
+                      int(panel_rect[1] + m_target[1] * panel_rect[3] / 1000))
+        else:
+            anchor = self._resolve_tail_target(panel_rect, data)
         
         # Ciclo de Auto-Shrink (3 tentativas para blindagem absoluta)
         best_overall_pos = None
@@ -191,17 +282,23 @@ class ComicComposer:
             bw_p = bw_n * panel_rect[2] / 1000
             bh_p = bh_n * panel_rect[3] / 1000
             
+            # v56.0: Log Fonte da Verdade (Manual Wins)
+            DebugLogger.log("MANUAL_BBOX_SOURCE_OF_TRUTH", "system", panel_index=-1, # Index extraído do panel_rect se possível
+                            extra={"manual_bbox": m_bbox, "abs_px": px1, "abs_py": py1, "abs_w": bw_p, "abs_h": bh_p},
+                            message=f"Modo MANUAL: Usando bbox exato {bw_p:.1f}x{bh_p:.1f} em ({px1:.1f}, {py1:.1f})")
+
             # Ajusta o texto ao box manual
             final_bw, final_bh, final_lines, final_font = self._fit_text_to_target_box(
                 text, style, base_scale, bw_p, bh_p, panel_rect, can_expand=True
             )
             best_overall_pos = (px1, py1)
-            # A posição pode ter sido ajustada se o balão expandiu
+            
+            # v56.0: REMOVIDO re-alinhamento de segurança. O BBox manual é a LEI ABSOLUTA.
+            # Se o balão vazar do quadro, o usuário verá no preview e ajustará lá.
             if final_bw > bw_p or final_bh > bh_p:
-                 # Reposiciona se necessário para não sair do painel no topo/esquerda
-                 px1 = max(panel_rect[0], min(panel_rect[0] + panel_rect[2] - final_bw, px1))
-                 py1 = max(panel_rect[1], min(panel_rect[1] + panel_rect[3] - final_bh, py1))
-                 best_overall_pos = (px1, py1)
+                 DebugLogger.log("LAYOUT_RESIZE", "system", is_anomaly=True,
+                                extra={"old_w": bw_p, "new_w": final_bw, "old_h": bh_p, "new_h": final_bh},
+                                message="AVISO: Balão expandiu além do BBox manual para acomodar o texto")
             
         elif manual_p and isinstance(manual_p, list) and len(manual_p) == 2:
             scale = base_scale
@@ -235,12 +332,19 @@ class ComicComposer:
                     best_overall_pos = best_pos
                     final_bw, final_bh, final_lines, final_font = bw, bh, lines, font
 
-        if not best_overall_pos: return
+        if not best_overall_pos:
+            DebugLogger.log("PLACEMENT_FAILED", "system", is_anomaly=True, message=f"Falha ao encontrar posição para balão: {style}")
+            return
 
-        m_origin = data.get("manual_tail_origin")
+        # v56.0: Log Final antes do desenho
+        DebugLogger.log("FINAL_COORDINATES_CALCULATED", "system", 
+                        extra={"final_pos": best_overall_pos, "final_size": (final_bw, final_bh)},
+                        message=f"Desenho final em {best_overall_pos[0]:.1f}, {best_overall_pos[1]:.1f}")
+
+        m_origin = data.get("tail_origin") or data.get("manual_tail_origin")
         px, py = best_overall_pos
         self._draw_balloon_v37_geometric(image, text, (px, py, px + final_bw, py + final_bh), 
-                                        final_lines, final_font, anchor, style, panel_rect, m_origin)
+                                        final_lines, final_font, anchor, style, panel_rect, m_origin, extra_data=data)
         self.occupied_regions.append([px, py, px + final_bw, py + final_bh])
 
     def _calculate_balloon_metrics_autofit(self, text, style, target_scale, panel_rect):
@@ -251,78 +355,50 @@ class ComicComposer:
         return self._fit_text_to_target_box(text, style, target_scale, max_bw, max_bh, panel_rect, can_expand=True)
 
     def _fit_text_to_target_box(self, text, style, scale, target_bw, target_bh, panel_rect, can_expand=True):
-        """
-        Refatoração v51.0: O coração do Auto-Fit.
-        Tenta reduzir a fonte até caber. Se chegar no mínimo e não couber, expande o box.
-        """
-        min_pt = 7.0 # Tamanho mínimo legível
-        pt_to_px = self.dpi / 72.0
-        min_fs = int(min_pt * pt_to_px)
+        metrics = self._get_lettering_metrics(style)
+        min_fs = metrics["min_pt"]
+        max_fs = metrics["max_pt"]
+        pad_h = metrics["pad_h"]
+        pad_v = metrics["pad_v"]
         
-        current_fs = int(self.base_size * scale)
+        current_fs = int(max_fs * scale)
         draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
         
-        # 1. Loop de redução progressiva (ponto a ponto aproximado)
         while current_fs >= min_fs:
             font = self._load_font_at_size(style, current_fs)
-            # Qual a área segura para este balão nas dimensões atuais?
-            safe_w, safe_h = self._get_safe_inner_area(style, target_bw, target_bh)
+            # Master Spec: Padding fixo em vez de ratio
+            safe_w = target_bw - (pad_h * 2)
+            safe_h = target_bh - (pad_v * 2)
             
-            # Wrap o texto para a largura segura
             lines = self._wrap_text_pixels(draw, text, font, safe_w)
             block_w, block_h = self._measure_text_block(lines, font)
             
-            # Se couber na área segura, estamos feitos!
             if block_w <= safe_w and block_h <= safe_h:
-                # Recalcula bw/bh finais para serem justos ao texto se for menor que o alvo,
-                # garantindo que safe_area contenha o bloco.
-                rw, rh = self._get_safe_ratios(style)
-                bw = max(target_bw, int(block_w / rw) + 10) if not can_expand else int(block_w / rw) + 10
-                bh = max(target_bh, int(block_h / rh) + 10) if not can_expand else int(block_h / rh) + 10
+                bw = block_w + (pad_h * 2)
+                bh = block_h + (pad_v * 2)
                 
-                # Regras de Aspect Ratio
+                # Proporção 1.8x a 2.6x (Master Spec)
                 if style not in ("narracao", "legenda", "eletronico"):
-                    if bw < bh * 1.2: bw = int(bh * 1.2)
-                    if bh < bw * 0.6: bh = int(bw * 0.6)
+                    if bw < bh * 1.8: bw = int(bh * 1.8)
+                    if bw > bh * 2.6: bw = int(bh * 2.6)
                 
                 return bw, bh, lines, font
             
-            # Reduz font size
-            current_fs -= 2 # aprox 0.5 ponto
+            current_fs -= 2
             
-        # 2. Se falhou no tamanho mínimo, expandimos se permitido
         if can_expand:
             font = self._load_font_at_size(style, min_fs)
-            expansion = 1.05
-            for _ in range(12): # Tenta expandir até ~80%
-                target_bw = int(target_bw * expansion)
-                target_bh = int(target_bh * expansion)
-                safe_w, safe_h = self._get_safe_inner_area(style, target_bw, target_bh)
-                lines = self._wrap_text_pixels(draw, text, font, safe_w)
-                block_w, block_h = self._measure_text_block(lines, font)
-                
-                if block_w <= safe_w and block_h <= safe_h:
-                    rw, rh = self._get_safe_ratios(style)
-                    bw, bh = int(block_w / rw) + 5, int(block_h / rh) + 5
-                    return bw, bh, lines, font
+            lines = self._wrap_text_pixels(draw, text, font, int(panel_rect[2] * 0.8))
+            block_w, block_h = self._measure_text_block(lines, font)
+            bw, bh = block_w + (pad_h * 2), block_h + (pad_v * 2)
+            return bw, bh, lines, font
         
-        # Fallback resiliente
         font = self._load_font_at_size(style, min_fs)
-        safe_w, _ = self._get_safe_inner_area(style, target_bw, target_bh)
-        lines = self._wrap_text_pixels(draw, text, font, safe_w)
-        return target_bw, target_bh, lines, font
-
-    def _get_safe_ratios(self, style):
-        """Retorna quanto por cento da largura/altura total é segura para texto."""
-        if style in ("narracao", "legenda"): return 0.90, 0.85
-        if style in ("fala", "pensamento", "sussurro"): return 0.75, 0.70
-        if style in ("grito", "burst", "raiva", "serrilhado", "burst_assimetrico"): return 0.55, 0.50
-        if style in ("flashback", "sonho", "organico", "nuvem"): return 0.65, 0.60
-        return 0.70, 0.65
+        return target_bw, target_bh, self._wrap_text_pixels(draw, text, font, target_bw - pad_h*2), font
 
     def _get_safe_inner_area(self, style, bw, bh):
-        rw, rh = self._get_safe_ratios(style)
-        return int(bw * rw), int(bh * rh)
+        metrics = self._get_lettering_metrics(style)
+        return bw - (metrics["pad_h"] * 2), bh - (metrics["pad_v"] * 2)
 
     def _measure_text_block(self, lines, font):
         if not lines: return 0, 0
@@ -420,38 +496,67 @@ class ComicComposer:
         # 5. Fallback centro inferior
         return (x + w // 2, y + int(h * 0.75))
 
-    def _draw_balloon_v37_geometric(self, image, text, rect, lines, font, anchor, style, panel_rect, manual_origin=None):
+    def _draw_balloon_v37_geometric(self, image, text, rect, lines, font, anchor, style, panel_rect, manual_origin=None, extra_data=None):
         x1, y1, x2, y2 = rect
         bcx, bcy = (x1 + x2) // 2, (y1 + y2) // 2
+        extra_data = extra_data or {}
         
-        # v47.0 & v48.0: Alvo e Origem da cauda
-        if manual_origin and isinstance(manual_origin, list) and len(manual_origin) == 2:
-            tx_raw = panel_rect[0] + (manual_origin[0] * panel_rect[2] / 1000)
-            ty_raw = panel_rect[1] + (manual_origin[1] * panel_rect[3] / 1000)
-            tx = max(x1, min(x2, tx_raw))
-            ty = max(y1, min(y2, ty_raw))
-            if x1 < tx < x2 and y1 < ty < y2:
-                dist_l, dist_r = abs(tx - x1), abs(tx - x2)
-                dist_t, dist_b = abs(ty - y1), abs(ty - y2)
-                min_dist = min(dist_l, dist_r, dist_t, dist_b)
-                if min_dist == dist_l: tx = x1
-                elif min_dist == dist_r: tx = x2
-                elif min_dist == dist_t: ty = y1
-                else: ty = y2
-        else:
-            tx, ty = self._choose_tail_exit(rect, anchor, 
-                                            pad=0.85 if style in ("pensamento", "nuvem") else 1.0)
+        # v60.1: Auditoria Editorial do Renderer
+        DebugLogger.log("BALLOON_RENDER_START", "system", 
+                        extra={"style": style, "rect": rect, "homologated": True},
+                        message=f"Renderizando balão estilo '{style}' via BalloonPresets (Homologado)")
 
-        # v48.0: Renderização via Presets Profissionais (High-Fidelity PIL)
-        origin_rel = (tx - bcx, ty - bcy)
-        target_rel = (anchor[0] - bcx, anchor[1] - bcy)
+        # v60.0: Lista de pares (origem, alvo) para renderizar as caudas
+        tails_to_draw = []
         
+        # 1. Resolve Alvo(s) e Origem(ns)
+        m_targets = extra_data.get("tail_targets", [])
+        m_origin = extra_data.get("tail_origin") or manual_origin
+        
+        if m_targets and isinstance(m_targets, list):
+            for mt in m_targets:
+                target_px = (int(panel_rect[0] + mt[0] * panel_rect[2] / 1000), 
+                             int(panel_rect[1] + mt[1] * panel_rect[3] / 1000))
+                
+                if m_origin:
+                    tx_raw = panel_rect[0] + (m_origin[0] * panel_rect[2] / 1000)
+                    ty_raw = panel_rect[1] + (m_origin[1] * panel_rect[3] / 1000)
+                    tx, ty = max(x1, min(x2, tx_raw)), max(y1, min(y2, ty_raw))
+                else:
+                    tx, ty = self._choose_tail_exit(rect, target_px, pad=0.85 if style in ("pensamento", "nuvem", "sonho") else 1.0)
+                
+                tails_to_draw.append(((tx, ty), target_px))
+        else:
+            # Caso único (padrão)
+            if m_origin:
+                tx_raw = panel_rect[0] + (m_origin[0] * panel_rect[2] / 1000)
+                ty_raw = panel_rect[1] + (m_origin[1] * panel_rect[3] / 1000)
+                tx, ty = max(x1, min(x2, tx_raw)), max(y1, min(y2, ty_raw))
+            else:
+                tx, ty = self._choose_tail_exit(rect, anchor, pad=0.85 if style in ("pensamento", "nuvem", "sonho") else 1.0)
+            
+            tails_to_draw.append(((tx, ty), anchor))
+
+        # v48.0 & v60.0: Renderização via Presets Profissionais (High-Fidelity PIL)
+        # Nota: BalloonPresets atualizado para aceitar múltiplas caudas se necessário, 
+        # mas aqui chamamos para o balão base e depois as caudas.
+        
+        # Para o preset, usamos a primeira cauda como referência de geometria de balão se necessário
+        first_origin, first_target = tails_to_draw[0]
+        origin_rel = (first_origin[0] - bcx, first_origin[1] - bcy)
+        target_rel = (first_target[0] - bcx, first_target[1] - bcy)
+        
+        # Renderiza o corpo do balão
         balloon_pil = BalloonPresets.get_balloon_image(
             style, x2-x1, y2-y1, origin_rel, target_rel,
             bg_color=self.bubble_bg, border_color=self.border_color, border_width=self.border_width
         )
         
-        # Cola o balão renderizado (centralizado no bcx, bcy)
+        # Se houver múltiplas caudas, precisamos que o preset desenhe as adicionais ou desenhamos manualmente?
+        # Por enquanto, assumimos que o preset cuida de uma. Se houver mais, iteramos nas caudas extras.
+        # TODO: Evoluir BalloonPresets para múltiplas caudas. 
+        # Por enquanto, o ComicComposer garante a posição.
+        
         px = int(bcx - balloon_pil.width // 2)
         py = int(bcy - balloon_pil.height // 2)
         image.paste(balloon_pil, (px, py), balloon_pil)
@@ -502,81 +607,30 @@ class ComicComposer:
         # Desenha com leve curva via polígono denso ou triângulo fiel
         draw.polygon([p1, p2, (ax, ay)], fill=self.bubble_bg, outline=self.border_color)
 
-    def _draw_cloud(self, draw, rect, dark=False, is_shadow=False):
-        x1, y1, x2, y2 = rect
-        w, h = x2-x1, y2-y1
-        fill = "#222222" if is_shadow else ("#e0e0e0" if dark else self.bubble_bg)
-        outline = None if is_shadow else self.border_color
-        
-        # Nuvem v42: Círculos variados
-        for i in range(18):
-            a = (2.0*math.pi/18.0)*i
-            size = 35 + (i % 3) * 5
-            bx, by = x1+w/2+(w/2/2.0)*math.cos(a), y1+h/2+(h/2/2.1)*math.sin(a)
-            draw.ellipse([int(bx)-size, int(by)-size, int(bx)+size, int(by)+size], fill=fill, outline=outline, width=1)
-        draw.ellipse([x1+15, y1+15, x2-15, y2-15], fill=fill)
-
-    def _draw_burst(self, draw, rect, spikes=24, dripping=False, is_shadow=False):
-        x1, y1, x2, y2 = rect
-        cx, cy, rx, ry = (x1+x2)/2.0, (y1+y2)/2.0, (x2-x1)/2.0, (y2-y1)/2.0
-        fill = "#222222" if is_shadow else self.bubble_bg
-        outline = None if is_shadow else self.border_color
-        
-        pts = []
-        for i in range(spikes * 2):
-            a = (math.pi/spikes) * i
-            f = 1.28 if i % 2 == 0 else 0.75
-            pts.append((cx + rx * f * math.cos(a), cy + ry * f * math.sin(a)))
-        draw.polygon(pts, fill=fill, outline=outline, width=2)
-        
-        if dripping and not is_shadow:
-            # Efeito de choro (pingos na base do balão)
-            for i in range(6):
-                dx = x1 + (x2-x1) * (0.15 + 0.14*i)
-                dy = y2 - 8
-                draw.ellipse([dx, dy, dx+14, dy+28], fill=self.bubble_bg, outline=self.border_color)
-
-    def _draw_jagged_rect(self, draw, rect, is_shadow=False):
-        x1, y1, x2, y2 = rect
-        fill = "#222222" if is_shadow else self.bubble_bg
-        outline = None if is_shadow else self.border_color
-        pts = []
-        steps = 14
-        # Top
-        for i in range(steps):
-            pts.append((x1 + (x2-x1)*i/steps, y1 + (12 if i%2==0 else -6)))
-        # Right
-        for i in range(steps):
-            pts.append((x2 + (12 if i%2==0 else -6), y1 + (y2-y1)*i/steps))
-        # Bottom
-        for i in range(steps):
-            pts.append((x2 - (x2-x1)*i/steps, y2 + (12 if i%2==0 else -6)))
-        # Left
-        for i in range(steps):
-            pts.append((x1 + (-12 if i%2==0 else 6), y2 - (y2-y1)*i/steps))
-        draw.polygon(pts, fill=fill, outline=outline, width=2)
-
-    def _draw_thought_tail(self, draw, base_point, anchor):
-        bx, by, ax, ay = base_point[0], base_point[1], anchor[0], anchor[1]
-        # Bolhas mais nítidas v37
-        pts = [((bx*4+ax)//5, (by*4+ay)//5), ((bx*2+ax)//3, (by*2+ay)//3), ((bx+ax*2)//3, (by+ay*2)//3)]
-        radii = [20, 14, 10]
-        for i in range(len(pts)):
-            px, py = pts[i]; r = radii[i]
-            draw.ellipse([px-r, py-r, px+r, py+r], fill=self.bubble_bg, outline=self.border_color, width=1)
 
     def _draw_narrative_quantum(self, image, text, panel_rect, data):
         draw = ImageDraw.Draw(image)
         x, y, w, h = panel_rect
         bw, bh, lines, font = self._calculate_balloon_metrics_autofit(text, "narracao", 1.1, panel_rect)
-        rx, ry = x + int(w * 0.05), y + int(h * 0.05)
-        # Sombra suave v37
-        draw.rectangle([rx+6, ry+6, rx + bw+6, ry + bh+6], fill="#333333") 
-        draw.rectangle([rx, ry, rx + bw, ry + bh], fill=self.narrative_bg, outline=self.border_color, width=2)
-        cy = ry + (bh - (self._line_height(font)*len(lines))) // 2
+        
+        # Master Spec: Posição clássica (Topo-Esquerda)
+        rx, ry = x + self.safe_zone, y + self.safe_zone
+        
+        # Sombra sutil
+        shadow_off = 4
+        draw.rectangle([rx + shadow_off, ry + shadow_off, rx + bw + shadow_off, ry + bh + shadow_off], fill="#0A0C1044") 
+        
+        # Caixa de Narração (Borda 6px, Fundo Creme)
+        draw.rectangle([rx, ry, rx + bw, ry + bh], fill=self.narrative_bg, outline=self.border_color, width=self.narrative_border)
+        
+        # Texto centralizado na caixa
+        lh = self._line_height(font)
+        total_th = lh * len(lines)
+        cy = ry + (bh - total_th) // 2
+        
         for l in lines:
             self._draw_styled_line(draw, l, rx + bw//2, cy, font)
-            cy += self._line_height(font)
+            cy += lh
 
     def _load_font_at_size(self, style, size):
         project_font_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "assets", "fonts")

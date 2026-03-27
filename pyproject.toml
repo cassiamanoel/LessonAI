@@ -20,6 +20,7 @@ dependencies = [
     "replicate>=1.0.7",
     "reportlab>=4.4.10",
     "streamlit>=1.55.0",
+    "streamlit-drawable-canvas>=0.9.3",
     "svglib>=1.6.0",
     "tavily-python>=0.7.23",
 ]

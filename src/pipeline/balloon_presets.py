@@ -34,10 +34,27 @@ class BalloonPresets:
         pts = []
         is_path_based = False # Para estilos que usam paths vetoriais manuais
         
-        # --- LÓGICA DE FORMA BASE ---
+        if style == "multipla_fala" or style == "cauda_dupla":
+            if style == "multipla_fala": modifiers.append("multipla_fala")
+            else: modifiers.append("cauda_dupla")
+            style = "fala"
         
+        if style == "sem_cauda":
+            modifiers.append("sem_cauda")
+            style = "fala"
+
+        if style == "interrompido":
+            modifiers.append("interrompido")
+            style = "fala"
+
         if style in ("pensamento", "sonho", "nuvem"):
-            BalloonPresets._draw_cloud_shape(draw, style, cx, cy, w, h, fill, border, bw)
+            # v60.1: Uso do Preset Homologado (Single Polygon Scalloped)
+            # Remove o fallback legado de círculos repetidos
+            pts = BalloonPresets._gen_cloud_pts(cx, cy, w, h, style=style)
+            
+            # Renderização do corpo nítido (Perímetro Único)
+            draw.polygon(pts, fill=fill, outline=border, width=bw if border else 0)
+            
             if "sem_cauda" not in modifiers and style == "pensamento":
                 BalloonPresets._draw_thought_trail(draw, cx, cy, origin_rel, target_rel, fill, border, bw)
             return
@@ -58,7 +75,7 @@ class BalloonPresets:
             return
 
         elif style in ("narração", "legenda", "retangular_arredondado"):
-            radius = 20 if style == "retangular_arredondado" else 0
+            radius = 10 if style in ("narração", "legenda") else 20
             BalloonPresets._draw_rect_shape(draw, cx, cy, w, h, fill, border, bw, radius)
             return
 
@@ -119,10 +136,25 @@ class BalloonPresets:
     @staticmethod
     def _gen_ellipse_pts(cx, cy, w, h, count=72, jitter=False):
         pts = []
+        # v57.1: Estilo Superelipse (Squircle) para visual Marvel/DC clássico
+        # Evita o aspecto de 'elipse de computador' perfeita
+        n_exp = 2.4 # Exponente da superelipse (2.0=elipse, >2.0=mais retangular)
+        
         for i in range(count):
             angle = (i / count) * 2 * math.pi
-            j = (1.0 + 0.01 * math.sin(angle * 12)) if jitter else 1.0
-            pts.append((cx + (w/2) * j * math.cos(angle), cy + (h/2) * j * math.sin(angle)))
+            cos_a = math.cos(angle)
+            sin_a = math.sin(angle)
+            
+            # Equação simplificada da superelipse
+            sx = math.copysign(abs(cos_a)**(2/n_exp), cos_a)
+            sy = math.copysign(abs(sin_a)**(2/n_exp), sin_a)
+            
+            # Jitter e ruído orgânico "feito à mão"
+            noise = 1.0 + random.uniform(-0.004, 0.004)
+            if jitter:
+                noise *= (1.0 + 0.012 * math.sin(angle * 14))
+                
+            pts.append((cx + (w/2) * noise * sx, cy + (h/2) * noise * sy))
         return pts
 
     @staticmethod
@@ -145,6 +177,32 @@ class BalloonPresets:
         return pts
 
     @staticmethod
+    def _gen_cloud_pts(cx, cy, w, h, count=120, style="pensamento"):
+        """
+        v60.1: Gerador de Nuvens Homologado (Scalloped Polygon).
+        Gera um perímetro único com 'scallops' suaves, evitando circulos sobrepostos.
+        """
+        pts = []
+        # Parâmetros de 'scalloping'
+        bumps = 12 if style == "sonho" else 15
+        amplitude = 0.12
+        
+        for i in range(count):
+            angle = (i / count) * 2 * math.pi
+            
+            # Função de Scallop: Bumps arredondados e vales nítidos
+            # abs(sin) cria os 'vales' nítidos voltados para dentro
+            scallop = 1.0 + amplitude * abs(math.sin(angle * bumps / 2))
+            
+            # Adiciona um leve jitter orgânico
+            noise = 1.0 + random.uniform(-0.01, 0.01)
+            
+            # Ajusta para formato de elipse base
+            pts.append((cx + (w/2) * scallop * noise * math.cos(angle), 
+                        cy + (h/2) * scallop * noise * math.sin(angle)))
+        return pts
+
+    @staticmethod
     def _gen_organic_pts(cx, cy, w, h, count=60):
         pts = []
         for i in range(count):
@@ -162,24 +220,7 @@ class BalloonPresets:
             pts.append((cx + (w/2) * serration * math.cos(angle), cy + (h/2) * serration * math.sin(angle)))
         return pts
 
-    @staticmethod
-    def _draw_cloud_shape(draw, style, cx, cy, w, h, fill, border, bw):
-        count = 10 if style == "sonho" else 14
-        opacity = 0.5 if style == "sonho" else 1.0
-        circles = []
-        for i in range(count):
-            angle = (i / count) * 2 * math.pi
-            rx, ry = (w/2) * math.cos(angle), (h/2) * math.sin(angle)
-            rad = (w/count) * (2.2 if style == "nuvem" else 1.8)
-            circles.append((cx + rx - rad, cy + ry - rad, cx + rx + rad, cy + ry + rad))
-        
-        draw.ellipse([cx-w/2, cy-h/2, cx+w/2, cy+h/2], fill=fill)
-        for c in circles:
-            draw.ellipse(c, fill=fill)
-        if border:
-            for c in circles:
-                draw.arc(c, start=0, end=360, fill=border, width=bw)
-            draw.ellipse([cx-w/2+bw, cy-h/2+bw, cx+w/2-bw, cy+h/2-bw], fill=fill)
+    # _draw_cloud_shape REMOVIDO (LEGACY/FALLBACK BUGADO) v60.1
 
     @staticmethod
     def _draw_flashback_shape(draw, cx, cy, w, h, fill, border, bw):
@@ -213,6 +254,7 @@ class BalloonPresets:
 
     @staticmethod
     def _draw_rect_shape(draw, cx, cy, w, h, fill, border, bw, radius=0):
+        # v58.0: Respeita o preenchimento passado (Creme Legenda)
         r = [cx-w/2, cy-h/2, cx+w/2, cy+h/2]
         if radius > 0:
             draw.rounded_rectangle(r, radius=radius, fill=fill, outline=border, width=bw)
@@ -243,13 +285,22 @@ class BalloonPresets:
         tx, ty = cx + target_rel[0], cy + target_rel[1]
         dist = math.sqrt((tx-ox)**2 + (ty-oy)**2)
         if dist < 10: return
+        
+        # v58.0: Cauda Triangular Master Spec
+        # Base: 24-38px | Comprimento: 55-110px
         ux, uy = (tx-ox)/dist, (ty-oy)/dist
         nx, ny = -uy, ux
-        base_w = 20
-        p1 = (ox + nx * base_w, oy + ny * base_w)
-        p2 = (ox - nx * base_w, oy - ny * base_w)
+        
+        base_w = max(24, min(38, dist * 0.15)) 
+        
+        # O ponto alvo (tx, ty) já é calculado no composer respeitando o comprimento se possível,
+        # mas aqui garantimos que a base seja nítida.
+        p1 = (ox + nx * base_w/2, oy + ny * base_w/2)
+        p2 = (ox - nx * base_w/2, oy - ny * base_w/2)
         p3 = (tx, ty)
+        
         draw.polygon([p1, p3, p2], fill=fill)
-        draw.line([p1, p3], fill=border, width=bw)
-        draw.line([p2, p3], fill=border, width=bw)
-        draw.line([p1, p2], fill=fill, width=bw + 2)
+        if border:
+            draw.line([p1, p3], fill=border, width=bw)
+            draw.line([p2, p3], fill=border, width=bw)
+            draw.line([p1, p2], fill=fill, width=bw + 1)

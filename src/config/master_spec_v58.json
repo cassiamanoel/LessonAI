@@ -1,0 +1,420 @@
+{
+  "project": {
+    "name": "hq_didatic_sci_fi_page",
+    "version": "1.0.0",
+    "language": "pt-BR",
+    "description": "Configuração técnica para geração de página de HQ didática sci-fi com layout editorial, balões e lettering profissional."
+  },
+  "canvas": {
+    "width_px": 2480,
+    "height_px": 3508,
+    "dpi": 300,
+    "orientation": "vertical",
+    "aspect_ratio": "A4",
+    "bleed_px": 30,
+    "safe_margin_px": 80,
+    "background_color": "#FFFFFF"
+  },
+  "style": {
+    "genre": [
+      "graphic novel",
+      "cinematic sci-fi",
+      "philosophical educational comic"
+    ],
+    "render_style": "digital painting with inked comic finish",
+    "detail_level": "very_high",
+    "line_art": {
+      "enabled": true,
+      "color": "#000000",
+      "weight": "strong",
+      "sharp": true,
+      "expressive": true
+    },
+    "contrast": "high",
+    "lighting": {
+      "type": "dramatic volumetric",
+      "tech_glow": true,
+      "cinematic": true
+    },
+    "finish": "editorial premium",
+    "texture_profile": [
+      "rock",
+      "dust",
+      "metal",
+      "stormy sky",
+      "luminous energy"
+    ],
+    "mood": [
+      "contemplative",
+      "epic",
+      "didactic",
+      "futuristic",
+      "solemn"
+    ],
+    "avoid_styles": [
+      "cartoon",
+      "childish",
+      "plastic_3d",
+      "generic_ai_art"
+    ]
+  },
+  "palette": {
+    "primary": [
+      "#59D7FF",
+      "#9BEBFF",
+      "#F5FBFF",
+      "#102235",
+      "#5E6A73",
+      "#0A0C10",
+      "#B9A27A",
+      "#F4EEDC"
+    ],
+    "usage": {
+      "electric_blue": "#59D7FF",
+      "bright_cyan": "#9BEBFF",
+      "luminous_white": "#F5FBFF",
+      "night_blue": "#102235",
+      "steel_gray": "#5E6A73",
+      "deep_black": "#0A0C10",
+      "rock_sand": "#B9A27A",
+      "narration_cream": "#F4EEDC"
+    },
+    "saturation": "medium_controlled",
+    "highlight_behavior": "localized_neon_glow"
+  },
+  "layout": {
+    "page_count": 1,
+    "panel_count": 5,
+    "reading_order": "left_to_right_top_to_bottom",
+    "gutters": {
+      "size_px": 26,
+      "color": "#FFFFFF"
+    },
+    "panel_border": {
+      "color": "#000000",
+      "thickness_px": 8
+    },
+    "rules": {
+      "no_important_element_touching_border": true,
+      "no_collision_with_gutter": true,
+      "clear_visual_hierarchy": true,
+      "editorial_cleanliness": true
+    },
+    "panels": [
+      {
+        "id": 1,
+        "role": "hero_top_panel",
+        "x": 80,
+        "y": 80,
+        "w": 2320,
+        "h": 1050,
+        "shot_type": "wide_cinematic_establishing",
+        "description": "Plano geral cinematográfico com protagonista diante do cérebro de luz gigante e ruínas monumentais."
+      },
+      {
+        "id": 2,
+        "role": "mid_left_explanation",
+        "x": 80,
+        "y": 1156,
+        "w": 1137,
+        "h": 760,
+        "shot_type": "medium_shot",
+        "description": "Mentor cibernético explicando com drone próximo."
+      },
+      {
+        "id": 3,
+        "role": "mid_right_data_focus",
+        "x": 1243,
+        "y": 1156,
+        "w": 1157,
+        "h": 760,
+        "shot_type": "environment_data_focus",
+        "description": "Foco na malha neural e cubos holográficos com fala explicativa."
+      },
+      {
+        "id": 4,
+        "role": "lower_left_contemplation",
+        "x": 80,
+        "y": 1942,
+        "w": 980,
+        "h": 970,
+        "shot_type": "contemplative_medium",
+        "description": "Protagonista observando os dados ao lado do drone."
+      },
+      {
+        "id": 5,
+        "role": "lower_right_epic_closure",
+        "x": 1086,
+        "y": 1942,
+        "w": 1314,
+        "h": 1486,
+        "shot_type": "wide_epic_final",
+        "description": "Plano amplo com personagens diante da rede neural gigante no céu."
+      }
+    ]
+  },
+  "characters": {
+    "consistency_required": true,
+    "cast": [
+      {
+        "id": "protagonista",
+        "type": "human_male",
+        "age_range": "28-38",
+        "build": "athletic_lean",
+        "hair": {
+          "color": "dark",
+          "style": "short_slightly_spiky"
+        },
+        "outfit": {
+          "base": "dark_futuristic_tactical_coat",
+          "armor": "light_tech_panels",
+          "details_glow_color": "#59D7FF",
+          "accessories": [
+            "gloves",
+            "boots",
+            "utility_belt"
+          ]
+        },
+        "silhouette": "heroic_distinct",
+        "expression_keywords": [
+          "contemplative",
+          "curious",
+          "discovering"
+        ],
+        "panel_presence": [1, 4, 5]
+      },
+      {
+        "id": "mentor_cibernetico",
+        "type": "cybernetic_male",
+        "age_range": "45-65",
+        "appearance": {
+          "face": "intelligent_marked_serious",
+          "cybernetic_elements": "subtle_face_head_neck"
+        },
+        "outfit": {
+          "base": "dark_futuristic_clothing",
+          "details_glow_color": "#59D7FF"
+        },
+        "role": "guide_teacher_explainer",
+        "panel_presence": [2, 5]
+      },
+      {
+        "id": "drone",
+        "type": "floating_robotic_companion",
+        "shape": "spherical_or_compact_oval",
+        "size_visual": "small",
+        "body_material": "metallic",
+        "central_eye_color": "#59D7FF",
+        "secondary_lights_color": "#9BEBFF",
+        "movement": "soft_levitation",
+        "role": "tech_assistant",
+        "panel_presence": [2, 4, 5]
+      }
+    ]
+  },
+  "environment": {
+    "setting": "monumental_futuristic_ruins_with_archaeological_post_apocalyptic_feel",
+    "ground_elements": [
+      "stones",
+      "dust",
+      "cracks",
+      "debris"
+    ],
+    "architecture": [
+      "broken_columns",
+      "ancient_structures",
+      "ruined_buildings"
+    ],
+    "sky": {
+      "type": "charged_cosmic",
+      "particles": true,
+      "luminous": true
+    },
+    "main_visual_anchor": {
+      "name": "giant_neural_brain",
+      "description": "Cérebro gigante feito de luz no céu, formado por centenas de pontos luminosos conectados por linhas finas, como uma rede neural/sinapses/constelação tecnológica.",
+      "shape": "brain_like_organic_network",
+      "glow_colors": [
+        "#F5FBFF",
+        "#59D7FF",
+        "#9BEBFF"
+      ],
+      "has_light_trunk_to_ground": true,
+      "scale": "monumental"
+    },
+    "secondary_elements": [
+      "floating_transparent_holographic_cubes",
+      "data_interfaces_in_air",
+      "luminous_mist",
+      "spark_particles"
+    ]
+  },
+  "story_beats": {
+    "panel_1": "Descoberta visual grandiosa diante da inteligência emergente.",
+    "panel_2": "Mentor introduz a explicação sobre inteligência artificial.",
+    "panel_3": "Foco conceitual em aprendizado de padrões a partir de dados.",
+    "panel_4": "Observação contemplativa do processamento/dados.",
+    "panel_5": "Fechamento épico e reflexivo."
+  },
+  "lettering": {
+    "language": "pt-BR",
+    "uppercase_only": true,
+    "font_style_reference": [
+      "CC Wild Words",
+      "Anime Ace",
+      "Blambot"
+    ],
+    "text_color": "#111111",
+    "line_height_ratio": {
+      "min": 1.05,
+      "max": 1.15
+    },
+    "alignment_rules": {
+      "speech_balloons": "center",
+      "narration_boxes": "center_or_soft_left"
+    },
+    "font_size_px": {
+      "speech_min": 44,
+      "speech_max": 60,
+      "narration_min": 42,
+      "narration_max": 54
+    },
+    "fit_rules": {
+      "auto_fit": true,
+      "measure_real_bbox": true,
+      "word_wrap_by_rendered_width": true,
+      "no_word_cutting": true,
+      "no_border_touching": true,
+      "expand_balloon_if_needed": true
+    }
+  },
+  "balloons": {
+    "general_rules": {
+      "inside_safe_area_only": true,
+      "min_distance_to_panel_border_px": 30,
+      "respect_reading_flow": true,
+      "do_not_cover_essential_art": true,
+      "do_not_cross_gutter": true,
+      "tail_must_point_to_speaker": true,
+      "padding_px": {
+        "horizontal": 40,
+        "vertical": 30
+      }
+    },
+    "styles": [
+      {
+        "type": "narration_box",
+        "fill": "#F4EEDC",
+        "border_color": "#000000",
+        "border_thickness_px": 6,
+        "corner_radius_px": 10,
+        "shadow": "very_light_optional",
+        "min_size_px": {
+          "w": 420,
+          "h": 120
+        }
+      },
+      {
+        "type": "speech_balloon",
+        "shape": "horizontal_oval",
+        "fill": "#FCFCFC",
+        "border_color": "#000000",
+        "border_thickness_px": 6,
+        "tail": {
+          "style": "curved_triangle",
+          "base_width_px_min": 24,
+          "base_width_px_max": 38,
+          "length_px_min": 55,
+          "length_px_max": 110
+        },
+        "recommended_ratio": {
+          "width_to_height_min": 1.8,
+          "width_to_height_max": 2.6
+        }
+      }
+    ],
+    "instances": [
+      {
+        "panel_id": 1,
+        "type": "narration_box",
+        "text": "COMECEI A ENTENDER.",
+        "preferred_position": "upper_left"
+      },
+      {
+        "panel_id": 1,
+        "type": "narration_box",
+        "text": "INTELIGÊNCIA ARTIFICIAL NÃO É MAGIA.",
+        "preferred_position": "lower_right"
+      },
+      {
+        "panel_id": 2,
+        "type": "speech_balloon",
+        "text": "INTELIGÊNCIA ARTIFICIAL É A CAPACIDADE DAS MÁQUINAS.",
+        "preferred_position": "upper_left"
+      },
+      {
+        "panel_id": 3,
+        "type": "speech_balloon",
+        "text": "DE APRENDER PADRÕES A PARTIR DE DADOS.",
+        "preferred_position": "lower_left"
+      },
+      {
+        "panel_id": 4,
+        "type": "narration_box",
+        "text": "ANALISANDO DADOS.",
+        "preferred_position": "upper_left"
+      },
+      {
+        "panel_id": 5,
+        "type": "narration_box",
+        "text": "ENTÃO FOI ASSIM NÉ TUDO COMEÇOU.",
+        "preferred_position": "lower_left"
+      }
+    ]
+  },
+  "render_rules": {
+    "character_consistency": true,
+    "anatomy_consistency": true,
+    "perspective_consistency": true,
+    "same_visual_identity_across_panels": true,
+    "no_random_objects": true,
+    "no_distortion": true,
+    "text_must_be_legible": true,
+    "balloons_must_be_cleanly_positioned": true
+  },
+  "negative_prompt": [
+    "cartoon",
+    "chibi",
+    "childish style",
+    "plastic 3d",
+    "generic render",
+    "low resolution",
+    "blur",
+    "illegible text",
+    "spelling errors",
+    "letters outside balloon",
+    "cropped text",
+    "warped balloons",
+    "balloons touching borders",
+    "misaligned text boxes",
+    "deformed hands",
+    "extra fingers",
+    "extra eyes",
+    "inconsistent anatomy",
+    "face inconsistency between panels",
+    "costume inconsistency",
+    "broken perspective",
+    "messy composition",
+    "random clutter",
+    "overblown neon",
+    "empty background",
+    "unfinished panels",
+    "irregular gutters",
+    "shaky borders",
+    "accidental object cuts",
+    "text too small",
+    "text squeezed",
+    "balloon too small for text",
+    "bad overlap between text and character"
+  ]
+}

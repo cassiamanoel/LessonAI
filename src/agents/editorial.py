@@ -14,12 +14,45 @@ load_dotenv()
 # Carrega os prompts base das referências
 ROLES = get_all_roles()
 
-# Estilo Marvel Genérico Profissional (v36.0)
+# Estilo Cyberpunk Marvel Grade (v2.0)
 MARVEL_FIXED_STYLE = (
-    "Professional modern Marvel comic book illustration, "
-    "clean sharp ink line art, vibrant cinematic colors, "
-    "dramatic chiaroscuro lighting, masterpiece quality."
+    "Professional modern Marvel/DC comic book illustration, cyberpunk aesthetic, "
+    "clean sharp ink line art, vibrant neon colors on dark backgrounds, "
+    "dramatic chiaroscuro lighting, volumetric neon glow, masterpiece quality."
 )
+
+# Elenco fixo de 8 personagens (v2.0 Cyberpunk Tech Team)
+CAST_ROSTER = {
+    "Kira": {"role": "Arquiteta (Backend Engineer)", "narrative": "Protagonista e narradora. Lidera a investigação técnica."},
+    "Sofia": {"role": "Estrategista (Product Manager)", "narrative": "Define o problema e prioridades. Questiona premissas."},
+    "Yuki": {"role": "Analista (Data Scientist)", "narrative": "Explica conceitos de IA com clareza e metáforas visuais."},
+    "Marcus": {"role": "Guardião (DevOps/SRE)", "narrative": "Mostra impacto operacional. Voz da razão sob pressão."},
+    "Luna": {"role": "Intérprete (UX Designer)", "narrative": "Visualiza soluções e interfaces. Traduz complexidade."},
+    "AXIOM": {"role": "Não-Humano (AI Agent)", "narrative": "Representa automação e risco. Pode fugir do controle."},
+    "Victor": {"role": "Pressionador (Stakeholder)", "narrative": "Cobra resultado, prazo e ROI. Gera urgência."},
+    "Bia": {"role": "Verdade (Cliente Final)", "narrative": "Mostra impacto real. Faz perguntas que expõem falhas."},
+}
+
+# Arco narrativo obrigatório de 6 atos
+NARRATIVE_ARC = """
+ESTRUTURA NARRATIVA OBRIGATÓRIA (6 ATOS):
+1. MISTÉRIO — Um problema ou anomalia aparece no sistema. Victor (Stakeholder) pressiona por respostas. Kira (Arquiteta) assume a investigação.
+2. INVESTIGAÇÃO — Kira lidera a equipe. Sofia (PM) define prioridades. Marcus (DevOps) mostra dados operacionais. Tensão crescente.
+3. EXPLICAÇÃO — Yuki (Data Scientist) explica o conceito de IA envolvido. Use analogias e metáforas visuais. AXIOM (AI Agent) demonstra o conceito em ação.
+4. VISUALIZAÇÃO — Luna (UX Designer) projeta interfaces e fluxos holográficos. AXIOM materializa o conceito visualmente. Momento de "eureka" visual.
+5. ENTENDIMENTO — A equipe implementa a solução. Kira conecta as peças. Bia (Cliente) testa e valida o resultado real.
+6. GANCHO — Novo mistério ou pergunta emerge. AXIOM mostra comportamento inesperado. Curiosidade para o próximo episódio.
+
+REGRAS DE DISTRIBUIÇÃO DE PERSONAGENS:
+- Kira aparece em TODOS os atos (protagonista)
+- Cada personagem deve aparecer em pelo menos 2-3 atos
+- AXIOM é o catalisador de tensão — pode ser aliado OU ameaça
+- Victor aparece no início (pressão) e no final (cobrança/satisfação)
+- Bia aparece nos atos finais (validação real)
+- Yuki e Luna são as "explicadoras" — atos 3 e 4
+- Marcus aparece quando há caos operacional — atos 2 e 3
+- Distribua as falas de forma equilibrada — ninguém domina sozinho
+"""
 
 class QuadroSchema(BaseModel):
     descricao: str = Field(..., description="Descrição visual: [personagem + ação], [ambiente], [iluminação], [clima].")
@@ -40,19 +73,31 @@ class RoteiroSchema(BaseModel):
     paginas: List[PaginaSchema] = Field(..., description="Lista de páginas.")
 
 def get_script_writer_agent(model_id: str = "gpt-4o", language: str = "Português", custom_instructions: list = None):
-    """Retorna o agente responsável por escrever o roteiro no padrão v22.0."""
+    """Retorna o agente responsável por escrever o roteiro no padrão v2.0 Cyberpunk."""
+
+    # Monta descrição do elenco para o agente
+    cast_description = "ELENCO FIXO (use EXATAMENTE estes nomes no campo 'personagens'):\n"
+    for name, info in CAST_ROSTER.items():
+        cast_description += f"  - {name}: {info['role']} — {info['narrative']}\n"
+
     base_instructions = [
         f"Você é o Roteirista sênior da LessonAI. Idioma: {language}.",
-        "PADRÃO EDITORIAL QUANTUM v36.0:",
-        "  1. ARTE: FOQUE APENAS NA CENA. O estilo Marvel será injetado automaticamente.",
-        "  2. CONSCIÊNCIA DE DENSIDADE: Máximo 22 palavras. Ideal 12-15 palavras.",
+        "TEMA: HQs educativas sobre Inteligência Artificial em estilo cyberpunk profissional.",
+        cast_description,
+        NARRATIVE_ARC,
+        "PADRÃO EDITORIAL v2.0:",
+        "  1. ARTE: FOQUE APENAS NA CENA. O estilo cyberpunk Marvel será injetado automaticamente.",
+        "  2. CONSCIÊNCIA DE DENSIDADE: Máximo 22 palavras por diálogo. Ideal 12-15 palavras.",
         "  3. PLANEJAMENTO DE LAYOUT (OBRIGATÓRIO):",
         "     - Use 'personagem_pos' [x, y] com valores de 0 a 1000.",
         "     - Ex: [500, 500] é o centro absoluto. [200, 200] é topo-esquerda.",
-        "     - O sistema usará isso para ancorar a cauda e afastar o balão do rosto.",
         "  4. ZERO RUÍDO: NÃO inclua nomes ou 'NARRADOR:' no campo 'dialogo'.",
         "  5. ALL CAPS: Todo o conteúdo de 'dialogo' EM MAIÚSCULAS.",
-        "  6. QUADROS: Gere sempre entre 4 e 6 quadros por página."
+        "  6. QUADROS: Gere sempre entre 4 e 6 quadros por página.",
+        "  7. PERSONAGENS: Use SOMENTE os nomes do elenco fixo (Kira, Sofia, Yuki, Marcus, Luna, AXIOM, Victor, Bia).",
+        "  8. DISTRIBUIÇÃO: Cada personagem deve ter falas proporcionais ao seu papel no ato narrativo.",
+        "  9. ANALOGIAS: Use analogias criativas e recursos visuais para explicar conceitos de IA.",
+        " 10. AMBIENTE: Cenários cyberpunk — salas de servidores, war rooms holográficas, torres corporativas neon."
     ]
     if custom_instructions:
         base_instructions.extend(custom_instructions)
@@ -72,9 +117,11 @@ def get_editor_chief_agent(model_id: str = "gpt-4o"):
         model=OpenAIChat(id=model_id),
         description=ROLES["master"],
         instructions=[
-            "Você coordena a produção Marvel Grade v22.0.",
-            "Garanta que o conceito educacional seja preservado em frases curtas e impactantes.",
-            "Rigor absoluto no limite de 22 palavras por quadro."
+            "Você coordena a produção Cyberpunk Marvel Grade v2.0.",
+            "Garanta que o conceito educacional de IA seja preservado em frases curtas e impactantes.",
+            "Rigor absoluto no limite de 22 palavras por quadro.",
+            "Valide que os 8 personagens do elenco fixo estão sendo usados corretamente.",
+            "Valide que a estrutura de 6 atos está presente: Mistério → Investigação → Explicação → Visualização → Entendimento → Gancho."
         ]
     )
 
@@ -119,20 +166,31 @@ class ComicScriptGenerator:
     def generate(self, theme: str, num_pages: int = 5):
         max_retries = 2
         result = None
-        
-        v22_rules = (
-            "REGRAS V22.0 (PIXEL-PERFECT):\n"
+        num_pages = min(num_pages, 5)  # Limite máximo de 5 páginas
+
+        v2_rules = (
+            "REGRAS v2.0 CYBERPUNK:\n"
             "- 4 A 6 QUADROS POR PÁGINA.\n"
             "- DIÁLOGOS: 8-18 PALAVRAS (MAX 22).\n"
             "- ALL CAPS / SEM PREFIXOS.\n"
             "- ARTE: SEM MENÇÃO A BALÕES/TEXTO.\n"
             f"- EXATAMENTE {num_pages} PÁGINAS.\n"
+            "- USE OS 8 PERSONAGENS DO ELENCO FIXO.\n"
+            "- SIGA A ESTRUTURA DE 6 ATOS OBRIGATÓRIA.\n"
+            "- CENÁRIOS CYBERPUNK: neon, hologramas, tech corporativo.\n"
             "- CONCISÃO: Quanto menos páginas, mais curto e objetivo deve ser o conteúdo. "
             "Se num_pages <= 3, seja extremamente direto e esqueça introduções longas."
         )
 
         for attempt in range(max_retries + 1):
-            prompt = f"Crie roteiro educacional sobre '{theme}' em {num_pages} páginas. Idioma: {self.language}.\n{v22_rules}"
+            prompt = (
+                f"Crie roteiro de HQ educativa sobre o conceito de IA: '{theme}' em {num_pages} páginas. "
+                f"Idioma: {self.language}.\n"
+                f"Use os 8 personagens do elenco fixo (Kira, Sofia, Yuki, Marcus, Luna, AXIOM, Victor, Bia).\n"
+                f"Siga a estrutura narrativa: Mistério → Investigação → Explicação → Visualização → Entendimento → Gancho.\n"
+                f"Distribua os personagens conforme seus papéis narrativos.\n"
+                f"{v2_rules}"
+            )
             try:
                 response = self.writer.run(prompt)
                 if hasattr(response.content, "model_dump"):

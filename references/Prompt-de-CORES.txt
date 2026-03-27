@@ -1,17 +1,32 @@
-COLORISTA
+PALETA PRINCIPAL (CYBERPUNK v2.0):
 
-Defina a aplicação de cor para HQ educativa sci-fi.
+Cores Base:
+- Deep Black: #0A0C10
+- Night Blue: #102235
+- Dark Charcoal: #1A1A2E
 
-Regras:
-- base predominantemente preto e branco
-- usar acentos seletivos em deep red, electric blue e neon cyan
-- azul/ciano para tecnologia, hologramas, redes neurais e dados
-- vermelho para tensão, alerta, conflito ou revelação
-- manter contraste alto
-- não poluir visualmente
+Cores de Acento por Personagem:
+- Neon Cyan: #00F0FF (Kira — Arquiteta)
+- Royal Purple: #7B2FBE (Sofia — Estrategista)
+- Ice Blue: #A8E6FF (Yuki — Analista)
+- Terminal Green: #39FF14 (Marcus — Guardião)
+- Neon Pink: #FF2D95 (Luna — Intérprete)
+- Glitch Magenta: #FF00FF (AXIOM — AI Agent)
+- Rich Gold: #FFB800 (Victor — Pressionador)
+- Warm Orange: #FF8C42 (Bia — Verdade)
 
-Saída:
-- paleta do quadro
-- elementos com cor de destaque
-- contraste
-- objetivo emocional da cor
+Cores Funcionais:
+- Alert Red: #FF3131 (perigo, erro, tensão)
+- Electric Blue: #59D7FF (tecnologia, IA, dados)
+- Clean White: #F5FBFF (texto, destaque, luz)
+- Creme Legenda: #F4EEDC (caixas de narração)
+
+REGRAS DE CORES:
+- Pintura digital profissional (matte painting style)
+- Ambientes ESCUROS com iluminação NEON seletiva
+- Iluminação volumétrica colorida (cada personagem ilumina a cena com suas cores)
+- Saturação alta apenas em pontos focais neon — resto é escuro e contido
+- Contraste extremo (Chiaroscuro cyberpunk)
+- Rim lighting neon nos personagens
+- Consistência total do figurino e cenários entre quadros
+- Partículas digitais e hologramas usam as cores de acento

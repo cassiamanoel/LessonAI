@@ -1,102 +1,122 @@
-STORY ENGINE
+STORY ENGINE v2.0 — CYBERPUNK TECH TEAM
 
 This project generates educational comic stories about Artificial Intelligence.
-
-Each story is a short episode that teaches one AI concept.
-
-The story must follow a narrative adventure structure.
+Each story is a short episode that teaches one AI concept through team investigation.
 
 MAIN NARRATION STYLE
 
-The story is narrated in first person by Agent Prompt.
+The story follows an ensemble cast of 8 tech professionals.
+Primary narrator: Kira (Backend Engineer / Arquiteta).
 
 Tone of narration:
-curious
+professional
 investigative
-mysterious
-educational
+cyberpunk tension
+educational through analogies
 
-The narrator should guide the reader through the discovery of AI concepts.
+The narrative should guide the reader through discovery of AI concepts via team dynamics and real-world tech scenarios.
 
-STORY STRUCTURE
+CAST OF CHARACTERS
 
-Each episode must follow this progression:
+1. Kira (Arquiteta) — Backend Engineer. Protagonist and narrator. Leads investigation.
+2. Sofia (Estrategista) — Product Manager. Defines the problem and priorities.
+3. Yuki (Analista) — Data Scientist. Explains AI concepts with clarity and visual metaphors.
+4. Marcus (Guardião) — DevOps/SRE. Shows operational impact. Voice of reason under pressure.
+5. Luna (Intérprete) — UX Designer. Visualizes solutions and interfaces.
+6. AXIOM (Não-Humano) — AI Agent. Represents automation and risk. Can go rogue.
+7. Victor (Pressionador) — Executive Stakeholder. Demands results and ROI. Creates urgency.
+8. Bia (Verdade) — End User/Client. Shows real impact. Asks questions that expose flaws.
 
-1. Mystery
-A question or mystery about an AI concept appears.
+STORY STRUCTURE (6 MANDATORY ACTS)
 
-2. Investigation
-Agent Prompt explores the problem.
+Each episode MUST follow this progression:
 
-3. Explanation
-Professor Tensor explains the concept.
+1. MYSTERY
+A problem or anomaly appears in the system.
+Victor pressures the team for answers.
+Kira takes charge of the investigation.
+Characters: Kira, Victor, Sofia
 
-4. Visualization
-Vector demonstrates the concept using holographic projections.
+2. INVESTIGATION
+Kira leads the team into the problem.
+Sofia defines priorities and scope.
+Marcus shows operational data and chaos.
+Characters: Kira, Sofia, Marcus
 
-5. Realization
-Agent Prompt understands the idea.
+3. EXPLANATION
+Yuki explains the AI concept involved.
+Use creative analogies and visual metaphors.
+AXIOM demonstrates the concept in action.
+Characters: Yuki, AXIOM, Kira
 
-6. Hook
-The final panel creates curiosity for the next concept.
+4. VISUALIZATION
+Luna designs holographic interfaces showing the solution.
+AXIOM materializes the concept visually.
+The "eureka" moment happens here.
+Characters: Luna, AXIOM, Kira
+
+5. UNDERSTANDING
+The team implements the solution.
+Kira connects all the pieces.
+Bia tests and validates the real-world result.
+Characters: Kira, Bia, Marcus
+
+6. HOOK
+A new mystery or question emerges.
+AXIOM shows unexpected behavior.
+Curiosity for the next episode.
+Characters: Kira, AXIOM
 
 EDUCATIONAL RULE
 
-Each episode must clearly teach one concept.
+Each episode must clearly teach one AI concept.
 
 Examples of concepts:
-
-What is Artificial Intelligence
 Machine Learning
 Neural Networks
-Embeddings
-Vector Databases
-Large Language Models
+Embeddings and Vector Databases
+Large Language Models (LLMs)
 Prompt Engineering
 RAG (Retrieval Augmented Generation)
-AI Agents
+AI Agents and Tool Use
 Fine-tuning
+Reinforcement Learning
+Computer Vision
+NLP and Tokenization
 
 VISUAL CONCEPT REPRESENTATION
 
 Concepts must appear visually through:
+holographic dashboards and interfaces
+neural network projections
+data flow visualizations
+code projections in mid-air
+AR overlays and HUDs
+glitch effects (especially for AXIOM)
 
-holographic diagrams
-neural networks
-data cubes
-vector grids
-flowing data streams
-AI energy structures
+CHARACTER DISTRIBUTION RULES
 
-CHARACTER ROLES
-
-Agent Prompt
-explorer and narrator
-
-Professor Tensor
-mentor who explains the concept
-
-Vector
-visualizes data and AI mechanisms
+- Kira appears in ALL acts (protagonist)
+- Each character must appear in at least 2-3 acts
+- Balance dialogue across characters — no one dominates alone
+- AXIOM is the tension catalyst — can be ally OR threat
+- Victor opens (pressure) and closes (satisfaction/demand)
+- Bia appears in final acts (real-world validation)
+- Yuki and Luna are the "explainers" — acts 3 and 4
+- Marcus appears during operational chaos — acts 2 and 3
 
 STORY TONE
 
-The narrative should feel like a sci-fi investigation about knowledge.
-
-The reader should feel they are discovering secrets of artificial intelligence.
+The narrative should feel like a cyberpunk tech thriller about knowledge.
+The reader should feel they are part of a team solving real AI challenges.
 
 The story must remain:
-
-clear
-exciting
-educational
-easy to understand
+clear and educational
+exciting and tense
+professional and credible
+easy to understand even for non-technical readers
 
 FINAL PANEL RULE
 
 The last panel of each episode must create curiosity about the next lesson.
-
-Example:
-a new mystery
-a new discovery
-a new question
+AXIOM should hint at something unexpected — a new anomaly, evolution, or risk.

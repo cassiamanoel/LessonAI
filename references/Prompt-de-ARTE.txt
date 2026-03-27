@@ -1,118 +1,149 @@
 PROJECT VISUAL STYLE
 
-professional comic book page or cover
-classic American superhero comic style inspired by modern graphic novels
+professional comic book page, Marvel/DC grade quality
+modern cyberpunk graphic novel with high-fidelity digital art
 
 ART STYLE
 
-clean line art
-strong black ink outlines
-bold comic shading
-high contrast lighting
-dramatic cinematic composition
+professional Marvel/DC comic book illustration
+cyberpunk aesthetic with neon-lit environments
+clean sharp ink line art with expressive black outlines
+dramatic volumetric lighting with neon glow sources
+high-contrast chiaroscuro with colored rim lighting
+dynamic action poses and cinematic camera angles
+high fidelity textures: metal, glass, holographic screens, circuit boards
+professional and consistent character rendering across panels
+modern digital painting with ink finish
 
 COLOR STYLE
 
-panels mostly black and white
-accent colors used selectively:
-deep red
-electric blue
-neon cyan
+Full cinematic cyberpunk color palette using:
+- Neon Cyan #00F0FF
+- Electric Blue #59D7FF
+- Neon Pink #FF2D95
+- Glitch Magenta #FF00FF
+- Terminal Green #39FF14
+- Rich Gold #FFB800
+- Deep Black #0A0C10
+- Night Blue #102235
 
-accent colors should highlight:
-technology
-energy
-cybernetic parts
-AI holograms
-data streams
+Neon glows and lens flares on dark backgrounds
+Volumetric colored rim lighting
+High contrast: dark environments with selective neon highlights
+Atmosphere with digital particles and holographic mist
+
+highlight technology and energy with:
+neon cyan for data and AI
+electric blue for interfaces
+neon pink for UX and design
+terminal green for systems and monitoring
+gold for corporate/executive elements
+glitch magenta for AXIOM and AI anomalies
 
 COMPOSITION
 
-dynamic comic layout
-panels may be slightly merged or overlapping
+dynamic comic layout with varied panel sizes
+panels may be slightly merged or overlapping for action sequences
 modern cinematic panel structure
-
 large establishing panels mixed with smaller dialogue panels
-
-clear reading flow
+clear reading flow left to right, top to bottom
 clear focal point in every panel
-
-no clutter
 balanced visual hierarchy
+no clutter
 
 THEMATIC WORLD
 
-ancient history combined with futuristic technology
-
+cyberpunk corporate tech environment
 mysterious investigations about artificial intelligence
-
-epic discovery tone
-educational sci-fi storytelling
+educational sci-fi storytelling through team dynamics
+high-tech meets human drama
 
 ENVIRONMENT STYLE
 
-ancient ruins mixed with advanced laboratories
-holographic interfaces
-floating data particles
-glowing neural networks
-vector grids and digital streams
+neon-lit server rooms with glowing rack walls
+holographic war rooms with floating dashboards
+futuristic open-plan offices with AR workstations
+corporate towers with glass and neon
+dark alleys with holographic advertisements
+data centers with neural network visualizations
+meeting rooms with projected metrics and KPIs
 
 ATMOSPHERE
 
-dramatic lighting
-mysterious tone
-cinematic perspective
-epic scale
+dramatic neon lighting on dark backgrounds
+cyberpunk tension and mystery
+cinematic perspective with depth
+tech-noir mood
+professional yet edgy
 
 CHARACTER DESIGN
 
-Agent Prompt
-half human half cybernetic investigator
-heroic posture
-mysterious presence
-attractive superhero style
-subtle glowing circuits integrated in the body
+8 fixed characters — cyberpunk tech team:
 
-Professor Tensor
-wise cybernetic scientist
-calm mentor presence
-neural network patterns glowing across mechanical implants
+Kira (Arquiteta) — protagonist
+short asymmetric black hair with neon cyan streaks
+black tactical jacket with circuit lines
+left arm exoskeleton, AR glasses
+heroic agile silhouette
 
-Vector
-sleek hovering robotic assistant
-projects holographic data cubes and vector grids
+Sofia (Estrategista)
+wavy brown hair in bun, dark blue futuristic blazer
+holographic tablet, purple glowing earrings
+
+Yuki (Analista)
+platinum-white long hair glowing blue at tips
+white tech lab coat, holographic wrist sensors
+
+Marcus (Guardião)
+robust build, short beard, tactical vest with LED panels
+utility belt, imposing presence
+
+Luna (Intérprete)
+purple-to-pink gradient hair, futuristic headphones
+white cropped jacket with pink luminous edges
+
+AXIOM (AI Agent)
+semi-translucent digital humanoid
+body of code lines and neural networks
+geometric cyan eyes, data particle aura, occasional glitches
+
+Victor (Pressionador)
+gray slicked-back hair, angular face
+black futuristic suit with golden lines
+holographic wristwatch projecting graphs
+
+Bia (Verdade)
+curly brown hair, casual futuristic hoodie
+tech backpack, holographic phone
+most relatable everyday look
 
 CHARACTER CONSISTENCY
 
 all characters must remain visually consistent across pages
-same armor design
-same cybernetic elements
+same clothing design
+same cybernetic/tech elements
 same face and silhouette
+same color accents per character
 
 STORYTELLING STYLE
 
-educational sci-fi narrative
-
-first-person narration by Agent Prompt
-
-tone:
-curious
-mysterious
-exploratory
-inspirational
+educational cyberpunk narrative
+team-based investigation and problem solving
+tone: professional, mysterious, educational, inspiring
 
 VISUAL EFFECTS
 
-holographic neural networks
-floating data cubes
-AI energy patterns
-vector grid projections
-digital particles
+holographic neural networks and dashboards
+floating data streams and code projections
+AR interface overlays
+glitch effects for AXIOM
+neon particle systems
+volumetric light shafts
 
 QUALITY RULES
 
-ultra detailed illustration
-clean composition
-clear storytelling
+ultra detailed illustration matching Marvel/DC professional grade
+clean composition with strong focal points
+clear visual storytelling
 no visual noise
-professional comic book quality
+professional comic book quality comparable to published titles

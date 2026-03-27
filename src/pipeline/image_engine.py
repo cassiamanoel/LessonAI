@@ -41,15 +41,37 @@ class ImageEngine:
             raise ValueError(f"Provider não suportado: {self.provider}")
 
     def _generate_openai(self, prompt, size):
+        import base64 as b64
+        from src.config.image_config import DEFAULT_QUALITY
         client = OpenAI()
-        response = client.images.generate(
-            model=self.model_id,
-            prompt=prompt,
-            size=size,
-            quality="hd",
-            n=1,
-        )
-        return response.data[0].url
+
+        quality = DEFAULT_QUALITY
+        if self.model_id == "dall-e-3" and quality not in ["standard", "hd"]:
+            quality = "hd"
+        elif self.model_id != "dall-e-3" and quality == "hd":
+            quality = "standard"
+
+        params = {
+            "model": self.model_id,
+            "prompt": prompt,
+            "size": size,
+            "n": 1,
+        }
+
+        if "dall-e" in self.model_id:
+            params["quality"] = quality
+
+        response = client.images.generate(**params)
+        image_data = response.data[0]
+
+        # gpt-image-1 retorna b64_json; dall-e-3 retorna url
+        if image_data.b64_json:
+            raw_bytes = b64.b64decode(image_data.b64_json)
+            return raw_bytes  # retorna bytes direto
+        elif image_data.url:
+            return image_data.url
+        else:
+            raise ValueError(f"OpenAI não retornou nem URL nem b64_json para modelo {self.model_id}")
 
     def _generate_google(self, prompt):
         # Gemini / Imagen 3

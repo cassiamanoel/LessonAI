@@ -1,142 +1,168 @@
-CHARACTER DNA SYSTEM
+CHARACTER DNA SYSTEM v2.0 — CYBERPUNK TECH TEAM
 
-This project uses fixed character designs.
-
+This project uses 8 fixed character designs.
 All characters must remain visually consistent across every page, panel, and image.
-
-Do not redesign characters.
-Do not change their face, armor, colors, or cybernetic patterns.
-
+Do not redesign characters. Do not change their face, clothing, colors, or tech elements.
 Characters must always look like the same individuals.
 
-MAIN CHARACTER
+======================================================================
+1. KIRA NAKAMURA — A Arquiteta (Backend Engineer)
+======================================================================
 
-Agent Prompt
-
-role:
-first-person narrator and investigative protagonist
-
-appearance:
-male cybernetic superhero
-half human half machine
+role: protagonist and narrator, leads investigation
 
 visual traits:
-athletic build
-confident heroic posture
-futuristic tactical armor
-long dark coat or cyber cloak
+- female, 30-35, short asymmetric black hair with neon cyan #00F0FF streaks
+- black tactical jacket with luminous blue circuit lines in seams
+- left arm with light mechanical exoskeleton (NOT robotic)
+- AR glasses with holographic HUD
+- reinforced combat boots
+- heroic agile silhouette
 
-cybernetic features:
-one cybernetic eye with subtle glow
-mechanical circuits integrated in the right arm
-glowing neural patterns on parts of the body
+color accents: Neon Cyan #00F0FF, Chrome Silver, Deep Black
 
-color accents:
-electric blue circuits
-subtle neon cyan highlights
+personality expression: determined, pragmatic, focused
 
-personality expression:
-curious
-determined
-observant
+======================================================================
+2. SOFIA ANDRADE — A Estrategista (Product Manager)
+======================================================================
 
-visual archetype:
-mysterious cybernetic investigator hero
-
-
-MENTOR CHARACTER
-
-Professor Tensor
-
-role:
-mentor scientist explaining artificial intelligence concepts
-
-appearance:
-older cybernetic scientist
-tall and thin
+role: defines problem and priorities, questions assumptions
 
 visual traits:
-calm posture
-intelligent expression
-cybernetic implants across temples and neck
+- female, 32-38, wavy brown hair in informal bun
+- dark blue futuristic blazer with holographic lapels projecting metrics
+- holographic tablet always in hand
+- purple glowing earrings
+- confident posture, focused expression
 
-cybernetic features:
-neural network patterns glowing softly across body implants
-holographic projections appearing near his hands
+color accents: Royal Purple #7B2FBE, Deep Navy, Holographic Silver
 
-color accents:
-neon cyan
-soft electric blue
+======================================================================
+3. YUKI TANAKA — A Analista (Data Scientist)
+======================================================================
 
-visual archetype:
-wise techno-philosopher
-
-
-SUPPORT CHARACTER
-
-Vector
-
-role:
-AI robotic assistant that visualizes data and concepts
-
-appearance:
-sleek floating robot
-
-design:
-smooth futuristic metallic body
-hovering movement
+role: explains AI concepts with clarity and visual metaphors
 
 visual traits:
-projects holographic cubes
-projects vector grids
-projects neural network diagrams
+- female, 28-33, long straight platinum-white hair with tips that glow blue
+- white tech lab coat with floating data panels on wrists
+- thin gloves with holographic sensors
+- discreet neural implant on right temple
+- serene intellectual expression
 
-color accents:
-neon cyan holograms
-electric blue light projections
+color accents: Ice Blue #A8E6FF, White, Soft Gold #FFD700
 
-visual archetype:
-friendly AI guide
+======================================================================
+4. MARCUS SILVA — O Guardião (DevOps/SRE)
+======================================================================
 
+role: shows operational impact, voice of reason under pressure
 
-DATA ELEMENT
+visual traits:
+- male, 35-42, short beard, shaved sides with short top hair
+- robust strong build
+- heavy black tactical vest with embedded monitoring panels (green LEDs ok, red alert)
+- reinforced gloves, utility belt with holographic tools
+- subtle chin scar
+- imposing presence
 
-Data Cubes
+color accents: Terminal Green #39FF14, Alert Red #FF3131, Gunmetal
 
-visual representation:
-small floating holographic cubes
+======================================================================
+5. LUNA PARK — A Intérprete (UX Designer)
+======================================================================
 
-function:
-represent datasets and information
+role: visualizes solutions, translates complexity into experience
 
-appearance:
-glowing semi-transparent cubes
-light particle trails
+visual traits:
+- female, 26-30, colorful hair (purple to neon pink gradient)
+- futuristic headphones with holographic projection
+- white cropped jacket with luminous pink edges
+- holographic stylus tucked behind ear
+- subtle geometric forearm tattoo
+- curious gentle expression
 
+color accents: Neon Pink #FF2D95, Soft Purple #B388FF, Clean White
 
+======================================================================
+6. AXIOM — O Não-Humano (AI Agent)
+======================================================================
+
+role: represents automation, evolution, and risk — tension catalyst
+
+visual traits:
+- semi-translucent digital humanoid entity
+- body made of code lines and luminous neural networks
+- mouthless face with two bright geometric cyan eyes
+- aura of floating data particles around body
+- unstable form that occasionally glitches
+- NOT a physical robot — holographic manifestation
+
+color accents: Electric Cyan #00FFFF, Glitch Magenta #FF00FF, Void Black
+
+======================================================================
+7. VICTOR DRUMMOND — O Pressionador (Stakeholder)
+======================================================================
+
+role: demands results, deadlines, and ROI — creates narrative tension
+
+visual traits:
+- male, 50-58, slicked-back gray hair, angular severe face
+- impeccable black futuristic suit with luminous golden lines on lapels
+- holographic wristwatch projecting performance graphs
+- dominant standing posture
+- calculated authority expression
+
+color accents: Rich Gold #FFB800, Executive Black, Power Red #CC0000
+
+======================================================================
+8. BIA COSTA — A Verdade (End User/Client)
+======================================================================
+
+role: shows real impact, asks questions that expose flaws
+
+visual traits:
+- young female, 22-26, natural curly brown hair
+- open questioning expression
+- casual futuristic hoodie with luminous patches
+- tech backpack with retractable antenna
+- holographic phone projecting product interface
+- most everyday/relatable look of the cast
+
+color accents: Warm Orange #FF8C42, Everyday Blue #4A90D9, Soft White
+
+======================================================================
 CHARACTER CONSISTENCY RULES
+======================================================================
 
-characters must keep the same:
+All characters must keep the same:
+- face shape and features
+- clothing design and colors
+- tech elements and accessories
+- body proportions
+- color accents (unique per character)
 
-face shape
-armor design
-cybernetic elements
-glowing patterns
-body proportions
-color accents
+Characters must be instantly recognizable in every scene.
+Each character has their own unique color signature — never swap colors.
 
-characters must be instantly recognizable in every scene
+======================================================================
+VISUAL PRESENCE RULES
+======================================================================
 
+Kira appears in ALL acts (protagonist).
+Victor appears in acts 1 and 5-6 (pressure and resolution).
+Sofia appears in acts 1-2 (problem definition).
+Marcus appears in acts 2-3 (operational chaos).
+Yuki appears in acts 3-4 (explanation).
+Luna appears in act 4 (visualization).
+AXIOM appears in acts 3-6 (demonstration and tension).
+Bia appears in acts 5-6 (real-world validation).
 
-VISUAL PRESENCE RULE
-
-Agent Prompt should appear in most panels.
-
-Professor Tensor appears during explanations.
-
-Vector appears when visualizing data or AI concepts.
-
-
+======================================================================
 STYLE CONSISTENCY
+======================================================================
 
-characters must follow the same superhero aesthetic used throughout the project.
+All characters must follow the cyberpunk professional aesthetic.
+Dark environments with neon-lit character accents.
+Each character's presence should be identifiable by their unique color glow.
